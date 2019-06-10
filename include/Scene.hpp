@@ -32,6 +32,7 @@ public:
     
 private:
     void ProcessRay(Ray &ray, int depth);
+    Object* FindObject(Ray &ray, Group* group, Collision& col);
     
     std::vector<Group*> groups;
     std::vector<glm::vec3> render;

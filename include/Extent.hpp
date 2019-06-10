@@ -10,6 +10,7 @@
 #define Extent_hpp
 
 #include <glm/glm.hpp>
+#include "Ray.hpp"
 
 namespace DalRT {
 
@@ -28,6 +29,7 @@ public:
     
     /// Determines if the point is within the extent
     bool ContainsPoint(glm::vec3 const &point);
+    bool RayIntersects(Ray* ray);
     
     glm::vec3 GetMin();
     glm::vec3 GetMax();

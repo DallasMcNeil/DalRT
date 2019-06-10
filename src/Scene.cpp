@@ -8,6 +8,7 @@
 
 #include "Scene.hpp"
 #include "Sphere.hpp"
+#include <limits>
 
 namespace DalRT {
     
@@ -30,8 +31,7 @@ namespace DalRT {
         
         for (int i=0; i<size; i++)
         {
-            glm::vec3 dir = rays[i].direction;
-            render[i] = glm::vec3((dir.x + 1.0f) / 2.0f, (dir.y + 1.0f) / 2.0f, (dir.z + 1.0f) / 2.0f);
+            render[i] = rays[i].color;
         }
     }
     
@@ -42,22 +42,74 @@ namespace DalRT {
             return;
         }
         
-        Collision col;
         for (int g=0; g<groups.size(); g++)
         {
-            // TODO: Check extents
-            std::vector<Object*> objs = groups[g]->GetObjects();
-            for (int o=0; o<objs.size(); o++)
+            Collision col;
+            Object* result = FindObject(ray, groups[g], col);
+            if (result == nullptr)
             {
-                if (objs[o]->RayColides(ray, col))
+                continue;
+            }
+            else
+            {
+                ray.direction = glm::reflect(ray.direction, col.normal);
+                ray.origin = col.location + (ray.direction * 0.0001f);
+                
+                ray.color = glm::vec3((ray.direction.x + 1.0f) / 2.0f, (ray.direction.y + 1.0f) / 2.0f, (ray.direction.z + 1.0f) / 2.0f);
+                
+                ProcessRay(ray, ++depth);
+                return;
+            }
+        }
+        if (depth == 0)
+        {
+            ray.color = glm::vec3(0.5f,0.5f,0.5f);
+        }
+        return;
+    }
+    
+    Object* Scene::FindObject(Ray &ray, Group* group, Collision& col)
+    {
+        Collision objCol;
+
+        Object* closestObj = nullptr;
+        float closestDist = std::numeric_limits<float>::max();
+        
+        std::vector<Object*> objs = group->GetObjects();
+        for (int o=0; o<objs.size(); o++)
+        {
+            if (objs[o]->GetExtent()->RayIntersects(&ray))
+            {
+                if (objs[o]->RayColides(ray, objCol))
                 {
-                    ray.direction = glm::reflect(ray.direction, col.normal);
-                    ray.origin = col.location + (ray.direction * 0.0001f);
-                    ProcessRay(ray, ++depth);
-                    return;
+                    float dist = glm::distance(ray.origin, objCol.location);
+                    if (dist < closestDist)
+                    {
+                        closestObj = objs[o];
+                        closestDist = dist;
+                        col = objCol;
+                    }
                 }
             }
         }
+        
+        std::vector<Group*> subGroups = group->GetSubGroups();
+        for (int s=0; s<subGroups.size(); s++)
+        {
+            Object* result = FindObject(ray, subGroups[s], objCol);
+            if (result != nullptr)
+            {
+                float dist = glm::distance(ray.origin, objCol.location);
+                if (dist < closestDist)
+                {
+                    closestObj = result;
+                    closestDist = dist;
+                    col = objCol;
+                }
+            }
+        }
+        
+        return closestObj;
     }
     
     std::vector<float> Scene::GetRender() 
