@@ -12,23 +12,31 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "Camera.hpp"
+#include "Group.hpp"
 
 namespace DalRT {
 
 class Scene
 {
 public:
+    Scene();
+    
     void RenderScene();
     std::vector<float> GetRender();
     
     void SetCamera(Camera* camera);
+    void SetMaxDepth(unsigned int depth);
     
-    void AddGroup();
-    void RemoveGroup();
+    void AddGroup(Group* group);
+    bool RemoveGroup(Group* group);
     
 private:
+    void ProcessRay(Ray &ray, int depth);
+    
+    std::vector<Group*> groups;
     std::vector<glm::vec3> render;
     Camera* camera;
+    unsigned int maxDepth = 32;
 };
     
 }

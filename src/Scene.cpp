@@ -10,22 +10,19 @@
 #include "Sphere.hpp"
 
 namespace DalRT {
+    
+    Scene::Scene()
+    {
+        maxDepth = 16;
+    }
 
     void Scene::RenderScene()
     {
         std::vector<Ray> rays = camera->ProduceRays();
         
-        glm::vec3 pos = glm::vec3(0.0f, 0.0f, 5.0f);
-        Sphere sphere;
-        sphere.SetPosition(pos);
-        
-        Collision col;
         for (int r=0; r<rays.size(); r++)
         {
-            if (sphere.RayColides(rays[r], col)) {
-                rays[r].direction = glm::reflect(rays[r].direction, col.normal);
-                rays[r].origin = col.location;
-            }
+            ProcessRay(rays[r], 0);
         }
         
         unsigned int size = camera->GetWidth() * camera->GetHeight();
@@ -35,6 +32,31 @@ namespace DalRT {
         {
             glm::vec3 dir = rays[i].direction;
             render[i] = glm::vec3((dir.x + 1.0f) / 2.0f, (dir.y + 1.0f) / 2.0f, (dir.z + 1.0f) / 2.0f);
+        }
+    }
+    
+    void Scene::ProcessRay(Ray &ray, int depth)
+    {
+        if (depth >= maxDepth)
+        {
+            return;
+        }
+        
+        Collision col;
+        for (int g=0; g<groups.size(); g++)
+        {
+            // TODO: Check extents
+            std::vector<Object*> objs = groups[g]->GetObjects();
+            for (int o=0; o<objs.size(); o++)
+            {
+                if (objs[o]->RayColides(ray, col))
+                {
+                    ray.direction = glm::reflect(ray.direction, col.normal);
+                    ray.origin = col.location + (ray.direction * 0.0001f);
+                    ProcessRay(ray, ++depth);
+                    return;
+                }
+            }
         }
     }
     
@@ -55,14 +77,27 @@ namespace DalRT {
         this->camera = camera;
     }
     
-    void Scene::AddGroup()
+    void Scene::SetMaxDepth(unsigned int depth)
     {
-        
+        maxDepth = depth;
     }
     
-    void Scene::RemoveGroup()
+    void Scene::AddGroup(Group* group)
     {
-        
+        groups.push_back(group);
+    }
+    
+    bool Scene::RemoveGroup(Group* group)
+    {
+        for (int i=0; i<groups.size(); i++)
+        {
+            if (groups[i] == group)
+            {
+                groups.erase(groups.begin() + i);
+                return true;
+            }
+        }
+        return false;
     }
 }
 

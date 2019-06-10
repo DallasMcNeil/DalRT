@@ -21,6 +21,11 @@ bool Sphere::RayColides(Ray ray, Collision& collision)
     return glm::intersectRaySphere(ray.origin, ray.direction, position, radius, collision.location, collision.normal);
 }
     
+void Sphere::SetRadius(float radius)
+{
+    this->radius = abs(radius);
+}
+    
 void Sphere::CalculateExtent()
 {
     extent.Reset();

@@ -31,6 +31,7 @@ public:
     
     glm::vec3 GetMin();
     glm::vec3 GetMax();
+    bool Empty();
     
 private:
     glm::vec3 min;

@@ -18,13 +18,18 @@ namespace DalRT {
 class Group
 {
 public:
-//    void AddSubGroup(Group *group);
-//    bool RemoveSubGroup(Group *group);
-//
-//    void AddObject(Object *object);
-//    bool RemoveObject(Object *object);
-//
-//    Extent* GetExtent();
+    
+    Group();
+    
+    void AddSubGroup(Group *group);
+    bool RemoveSubGroup(Group *group);
+    std::vector<Group*> GetSubGroups();
+
+    void AddObject(Object *object);
+    bool RemoveObject(Object *object);
+    std::vector<Object*> GetObjects();
+
+    Extent* GetExtent();
     
 private:
     void CalculateExtent();

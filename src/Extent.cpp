@@ -37,8 +37,11 @@ namespace DalRT {
     
     void Extent::Extend(Extent* extent)
     {
-        Extend(extent->GetMin());
-        Extend(extent->GetMax());
+        if (!extent->Empty())
+        {
+            Extend(extent->GetMin());
+            Extend(extent->GetMax());
+        }
     }
 
     void Extent::Reset()
@@ -59,6 +62,11 @@ namespace DalRT {
     glm::vec3 Extent::GetMax()
     {
         return max;
+    }
+    
+    bool Extent::Empty()
+    {
+        return empty;
     }
 
 }
