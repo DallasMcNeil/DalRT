@@ -23,7 +23,7 @@ namespace DalRT {
         
         for (int r=0; r<rays.size(); r++)
         {
-            ProcessRay(rays[r], 0);
+            ProcessRay(rays[r], 0, nullptr);
         }
         
         unsigned int size = camera->GetWidth() * camera->GetHeight();
@@ -35,7 +35,7 @@ namespace DalRT {
         }
     }
     
-    void Scene::ProcessRay(Ray &ray, int depth)
+    void Scene::ProcessRay(Ray &ray, int depth, Object* currentObject)
     {
         if (depth >= maxDepth)
         {
@@ -45,35 +45,37 @@ namespace DalRT {
         for (int g=0; g<groups.size(); g++)
         {
             Collision col;
-            Object* result = FindObject(ray, groups[g], 0.0f, col);
+            Object* result = FindObject(ray, groups[g], 0.0f, currentObject, col);
             if (result == nullptr)
             {
                 continue;
             }
             else
             {
+                
+                // Diffuse
                 ray.color = glm::vec3(0.0f,0.0f,0.0f);
                 for (int l=0; l<lights.size(); l++)
                 {
-                    std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location + (col.normal*0.0001f));
+                    std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
                     for (int r=0; r<lightRays.size(); r++)
                     {
-                        if (!RayIntersectsObject(lightRays[r]))
+                        if (!RayIntersectsObject(lightRays[r], result))
                         {
-                            ray.color = lightRays[r].color;
+                            float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
+                            ray.color += (lightRays[r].color) * diff;
                         }
                     }
                 }
                 
                 
-                //ray.direction = glm::reflect(ray.direction, col.normal);
-                //ray.origin = col.location + (ray.direction * 0.0001f);
-                
-                //ray.color = glm::vec3((ray.direction.x + 1.0f) / 2.0f, (ray.direction.y + 1.0f) / 2.0f, (ray.direction.z + 1.0f) / 2.0f);
-                //ray.color = glm::vec3(0.5f,0.0f,0.0f);
-                //Ray reflect = ray;
-                //ProcessRay(ray, ++depth);
-                //ray.color += reflect.color;
+//                Ray reflect = ray;
+//                reflect.direction = glm::reflect(ray.direction, col.normal);
+//                reflect.origin = col.location;
+//                reflect.color = glm::vec3(0.0f,0.0f,0.0f);
+//
+//                ProcessRay(reflect, ++depth, result);
+//                ray.color += reflect.color;
                 return;
             }
         }
@@ -81,10 +83,14 @@ namespace DalRT {
         {
             ray.color = glm::vec3(1.0f,1.0f,1.0f);
         }
+        else
+        {
+            ray.color = glm::vec3(0.0f,0.0f,0.0f);
+        }
         return;
     }
     
-    Object* Scene::FindObject(Ray &ray, Group* group, float anyWithinDistance, Collision& col)
+    Object* Scene::FindObject(Ray &ray, Group* group, float anyWithinDistance, Object* ignoreObject, Collision& col)
     {
         Collision objCol;
 
@@ -94,20 +100,23 @@ namespace DalRT {
         std::vector<Object*> objs = group->GetObjects();
         for (int o=0; o<objs.size(); o++)
         {
-            if (objs[o]->GetExtent()->RayIntersects(&ray))
+            if (objs[o] != ignoreObject)
             {
-                if (objs[o]->RayColides(ray, objCol))
+                if (objs[o]->GetExtent()->RayIntersects(&ray))
                 {
-                    float dist = glm::distance(ray.origin, objCol.location);
-                    if (dist < closestDist)
+                    if (objs[o]->RayColides(ray, objCol))
                     {
-                        closestObj = objs[o];
-                        closestDist = dist;
-                        col = objCol;
-                    }
-                    if (closestDist <= anyWithinDistance)
-                    {
-                        return closestObj;
+                        float dist = glm::distance(ray.origin, objCol.location);
+                        if (dist < closestDist)
+                        {
+                            closestObj = objs[o];
+                            closestDist = dist;
+                            col = objCol;
+                        }
+                        if (closestDist <= anyWithinDistance)
+                        {
+                            return closestObj;
+                        }
                     }
                 }
             }
@@ -116,7 +125,7 @@ namespace DalRT {
         std::vector<Group*> subGroups = group->GetSubGroups();
         for (int s=0; s<subGroups.size(); s++)
         {
-            Object* result = FindObject(ray, subGroups[s], anyWithinDistance, objCol);
+            Object* result = FindObject(ray, subGroups[s], anyWithinDistance, ignoreObject, objCol);
             if (result != nullptr)
             {
                 float dist = glm::distance(ray.origin, objCol.location);
@@ -136,12 +145,12 @@ namespace DalRT {
         return closestObj;
     }
     
-    bool Scene::RayIntersectsObject(Ray &ray)
+    bool Scene::RayIntersectsObject(Ray &ray, Object* ignoreObject)
     {
         for (int g=0; g<groups.size(); g++)
         {
             Collision col;
-            Object* result = FindObject(ray, groups[g], ray.distance, col);
+            Object* result = FindObject(ray, groups[g], ray.distance, ignoreObject, col);
             if (result != nullptr)
             {
                 return true;

@@ -35,9 +35,9 @@ public:
     bool RemoveLight(Light* group);
     
 private:
-    void ProcessRay(Ray &ray, int depth);
-    Object* FindObject(Ray &ray, Group* group, float anyWithinDistance, Collision& col);
-    bool RayIntersectsObject(Ray &ray);
+    void ProcessRay(Ray &ray, int depth, Object* currentObject);
+    Object* FindObject(Ray &ray, Group* group, float anyWithinDistance, Object* ignoreObject, Collision& col);
+    bool RayIntersectsObject(Ray &ray, Object* ignoreObject);
     
     std::vector<Group*> groups;
     std::vector<Light*> lights;
