@@ -11,29 +11,29 @@
 
 namespace DalRT {
 
-Sphere::Sphere():Object()
-{
-    radius = 1.0f;
-}
-    
-bool Sphere::RayColides(Ray ray, Collision& collision)
-{
-    return glm::intersectRaySphere(ray.origin, ray.direction, position, radius, collision.location, collision.normal);
-}
-    
-void Sphere::SetRadius(float radius)
-{
-    this->radius = abs(radius);
-}
-    
-void Sphere::CalculateExtent()
-{
-    extent.Reset();
-    
-    extent.Extend(position - radius);
-    extent.Extend(position + radius);
-    
-    extentDirty = false;
-}
+    Sphere::Sphere():Object()
+    {
+        radius = 1.0f;
+    }
+        
+    bool Sphere::RayColides(Ray ray, Collision& collision)
+    {
+        return glm::intersectRaySphere(ray.origin, ray.direction, position, radius, collision.location, collision.normal);
+    }
+        
+    void Sphere::SetRadius(float radius)
+    {
+        this->radius = abs(radius);
+    }
+        
+    void Sphere::CalculateExtent()
+    {
+        extent.Reset();
+        
+        extent.Extend(position - radius);
+        extent.Extend(position + radius);
+        
+        extentDirty = false;
+    }
     
 }

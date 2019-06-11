@@ -13,6 +13,7 @@
 #include <vector>
 #include "Camera.hpp"
 #include "Group.hpp"
+#include "Light.hpp"
 
 namespace DalRT {
 
@@ -30,11 +31,16 @@ public:
     void AddGroup(Group* group);
     bool RemoveGroup(Group* group);
     
+    void AddLight(Light* group);
+    bool RemoveLight(Light* group);
+    
 private:
     void ProcessRay(Ray &ray, int depth);
-    Object* FindObject(Ray &ray, Group* group, Collision& col);
+    Object* FindObject(Ray &ray, Group* group, float anyWithinDistance, Collision& col);
+    bool RayIntersectsObject(Ray &ray);
     
     std::vector<Group*> groups;
+    std::vector<Light*> lights;
     std::vector<glm::vec3> render;
     Camera* camera;
     unsigned int maxDepth = 32;
