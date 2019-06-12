@@ -8,6 +8,7 @@
 
 #include "Scene.hpp"
 #include "Sphere.hpp"
+#include "Material.hpp"
 #include <limits>
 
 namespace DalRT {
@@ -31,7 +32,7 @@ namespace DalRT {
         
         for (int i=0; i<size; i++)
         {
-            render[i] = rays[i].color;
+            render[i] = glm::min(rays[i].color, glm::vec3(1.0f,1.0f,1.0f));
         }
     }
     
@@ -53,39 +54,61 @@ namespace DalRT {
             else
             {
                 
+                Material* mat = result->GetMaterial();
+                
+                glm::vec3 diffuse = glm::vec3(0.0f,0.0f,0.0f);
+                glm::vec3 specular = glm::vec3(0.0f,0.0f,0.0f);
+                glm::vec3 reflection = glm::vec3(0.0f,0.0f,0.0f);
                 // Diffuse
-                ray.color = glm::vec3(0.0f,0.0f,0.0f);
-                for (int l=0; l<lights.size(); l++)
+                
+                if (mat->metalic < 1.0f)
                 {
-                    std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
-                    for (int r=0; r<lightRays.size(); r++)
+                    for (int l=0; l<lights.size(); l++)
                     {
-                        if (!RayIntersectsObject(lightRays[r], result))
+                        std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
+                        for (int r=0; r<lightRays.size(); r++)
                         {
-                            float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
-                            ray.color += (lightRays[r].color) * diff;
+                            if (!RayIntersectsObject(lightRays[r], result))
+                            {
+                                float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
+                                glm::vec3 reflect = glm::reflect(-lightRays[r].direction, col.normal);
+                                
+                                float spec = std::pow(std::max(glm::dot(ray.direction, -reflect),0.0f),16.0f);
+                                diffuse += (lightRays[r].color) * diff;
+                                specular += (lightRays[r].color) * spec;
+                            }
                         }
                     }
                 }
                 
+                // Reflection
                 
-//                Ray reflect = ray;
-//                reflect.direction = glm::reflect(ray.direction, col.normal);
-//                reflect.origin = col.location;
-//                reflect.color = glm::vec3(0.0f,0.0f,0.0f);
-//
-//                ProcessRay(reflect, ++depth, result);
-//                ray.color += reflect.color;
+                if (mat->metalic > 0.0f)
+                {
+                    Ray reflect = ray;
+                    reflect.direction = glm::reflect(ray.direction, col.normal);
+                    reflect.origin = col.location;
+                    reflect.color = glm::vec3(0.0f,0.0f,0.0f);
+                    ProcessRay(reflect, ++depth, result);
+                    reflection += reflect.color * mat->metalic;
+                }
+                
+                ray.color = glm::vec3(0.0f,0.0f,0.0f);
+                
+                ray.color += mat->color * diffuse * (1.0f - mat->metalic);
+                ray.color += specular;
+                ray.color += mat->color * reflection * mat->metalic;
                 return;
             }
         }
         if (depth == 0)
         {
-            ray.color = glm::vec3(1.0f,1.0f,1.0f);
+            // Background
+            ray.color = glm::vec3(0.2f,0.2f,0.2f);
         }
         else
         {
-            ray.color = glm::vec3(0.0f,0.0f,0.0f);
+            ray.color = glm::vec3(0.2f,0.2f,0.2f);
         }
         return;
     }

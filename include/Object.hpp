@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include "Extent.hpp"
 #include "Ray.hpp"
+#include "Material.hpp"
 
 namespace DalRT {
 
@@ -27,8 +28,11 @@ public:
     void SetRotation(glm::vec3 const &rotation);
     void SetPosition(glm::vec3 const &position);
     void SetScale(glm::vec3 const &scale);
+    void SetMaterial(Material *material);
+    Material* GetMaterial();
     
     Extent* GetExtent();
+
     
 protected:
     virtual void CalculateExtent() = 0;
@@ -39,6 +43,8 @@ protected:
     
     bool extentDirty;
     Extent extent;
+    
+    Material *material;
 };
     
 }

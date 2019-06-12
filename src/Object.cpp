@@ -35,7 +35,17 @@ namespace DalRT {
         this->scale = scale;
         extentDirty = true;
     }
-
+    
+    void Object::SetMaterial(Material *material)
+    {
+        this->material = material;
+    }
+    
+    Material* Object::GetMaterial()
+    {
+        return material;
+    }
+    
     Extent* Object::GetExtent()
     {
         if (extentDirty)
