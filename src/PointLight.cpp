@@ -7,6 +7,7 @@
 //
 
 #include "PointLight.hpp"
+#include <algorithm>
 
 namespace DalRT {
 
@@ -38,10 +39,10 @@ namespace DalRT {
         if (radius <= 0.0f)
         {
             Ray ray;
-            ray.color = color;
             ray.origin = location;
             ray.direction = glm::normalize(position - location);
             ray.distance = glm::distance(position, location);
+            ray.color = color / std::sqrt(ray.distance);
             rays.push_back(ray);
         }
         else

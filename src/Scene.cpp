@@ -59,45 +59,44 @@ namespace DalRT {
                 glm::vec3 diffuse = glm::vec3(0.0f,0.0f,0.0f);
                 glm::vec3 specular = glm::vec3(0.0f,0.0f,0.0f);
                 glm::vec3 reflection = glm::vec3(0.0f,0.0f,0.0f);
-                // Diffuse
                 
-                if (mat->metalic < 1.0f)
+                // Diffuse
+                for (int l=0; l<lights.size(); l++)
                 {
-                    for (int l=0; l<lights.size(); l++)
+                    std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
+                    for (int r=0; r<lightRays.size(); r++)
                     {
-                        std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
-                        for (int r=0; r<lightRays.size(); r++)
+                        if (!RayIntersectsObject(lightRays[r], result))
                         {
-                            if (!RayIntersectsObject(lightRays[r], result))
-                            {
-                                float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
-                                glm::vec3 reflect = glm::reflect(-lightRays[r].direction, col.normal);
-                                
-                                float spec = std::pow(std::max(glm::dot(ray.direction, -reflect),0.0f),16.0f);
-                                diffuse += (lightRays[r].color) * diff;
-                                specular += (lightRays[r].color) * spec;
-                            }
+                            float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
+                            
+                            glm::vec3 reflect = glm::reflect(-lightRays[r].direction, col.normal);
+                            float spec = std::pow(std::max(glm::dot(ray.direction, -reflect),0.0f), mat->specularHardness);
+                            
+                            diffuse += (lightRays[r].color) * diff;
+                            specular += (lightRays[r].color) * spec;
                         }
                     }
                 }
                 
+                
                 // Reflection
                 
-                if (mat->metalic > 0.0f)
+                if (mat->reflectiveness > 0.0f)
                 {
                     Ray reflect = ray;
                     reflect.direction = glm::reflect(ray.direction, col.normal);
                     reflect.origin = col.location;
                     reflect.color = glm::vec3(0.0f,0.0f,0.0f);
                     ProcessRay(reflect, ++depth, result);
-                    reflection += reflect.color * mat->metalic;
+                    reflection += reflect.color;
                 }
                 
                 ray.color = glm::vec3(0.0f,0.0f,0.0f);
                 
-                ray.color += mat->color * diffuse * (1.0f - mat->metalic);
-                ray.color += specular;
-                ray.color += mat->color * reflection * mat->metalic;
+                ray.color += mat->specular * specular;
+                ray.color += mat->color * diffuse * (1.0f - mat->reflectiveness);
+                ray.color += mat->color * reflection * mat->reflectiveness;
                 return;
             }
         }

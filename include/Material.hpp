@@ -15,9 +15,9 @@ struct Material
 {
 public:
     glm::vec3 color;
-    float metalic;
-    float specular;
-    float roughness;
+    float reflectiveness;
+    glm::vec3 specular;
+    float specularHardness;
     float translucency;
     float indexOfRefraction;
 };
