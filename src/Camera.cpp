@@ -62,31 +62,54 @@ namespace DalRT
         std::vector<Ray> rays;
         rays.reserve(width*height);
         
-        float angle = fov/float(width - 1);
-        
-        for (int h=0; h<height; h++)
+        if (false) // Fish eye
         {
-            float a = h - ((float(height) - 1.0f)/2.0f);
+            float angle = fov/float(width - 1);
             
-            glm::vec3 right = glm::cross(up, direction);
-            glm::vec3 rotVert = glm::rotate(direction, angle*a, right);
-            
-            for (int w=0; w<width; w++)
+            for (int h=0; h<height; h++)
             {
-                a = w - ((float(width) - 1.0f)/2.0f);
+                float a = h - ((float(height) - 1.0f)/2.0f);
                 
-                glm::vec3 rotHorz = glm::rotate(rotVert, angle*a, up);
+                glm::vec3 right = glm::cross(up, direction);
+                glm::vec3 rotVert = glm::rotate(direction, angle*a, right);
                 
-                Ray ray;
-                ray.color = glm::vec3(1.0f,1.0f,1.0f);
-                ray.intensity = 1.0f;
-                ray.direction = rotHorz;
-                ray.origin = position;
-                rays.push_back(ray);
+                for (int w=0; w<width; w++)
+                {
+                    a = w - ((float(width) - 1.0f)/2.0f);
+                    
+                    glm::vec3 rotHorz = glm::rotate(rotVert, angle*a, up);
+                    
+                    Ray ray;
+                    ray.color = glm::vec3(1.0f,1.0f,1.0f);
+                    ray.direction = rotHorz;
+                    ray.origin = position;
+                    rays.push_back(ray);
+                }
             }
         }
-        
-        // TODO: Test
+        else // Regular
+        {
+            float aspect = float(width)/float(height);
+            float scale = std::tan(fov * 0.5);
+            
+            glm::mat4 toWorld = glm::lookAt(glm::vec3(0,0,0), -direction, up);
+            
+            for (int h=0; h<height; h++)
+            {
+                for (int w=0; w<width; w++)
+                {
+                    float x = (2.0f * (w + 0.5f) / float(width) - 1.0f) * aspect * scale;
+                    float y = (1.0f - 2.0f * (h + 0.5f) / float(height)) * scale;
+                    
+                    Ray ray;
+                    ray.color = glm::vec3(1.0f,1.0f,1.0f);
+                    glm::vec3 out = glm::vec4(x,y,1,1) * toWorld;
+                    ray.direction = glm::normalize(glm::vec3(out.x,out.y,out.z));
+                    ray.origin = position;
+                    rays.push_back(ray);
+                }
+            }
+        }
         
         return rays;
     }

@@ -32,14 +32,16 @@ public:
     Material* GetMaterial();
     
     Extent* GetExtent();
-
     
 protected:
     virtual void CalculateExtent() = 0;
+    void CalculateTransform();
 
     glm::vec3 rotation;
     glm::vec3 position;
     glm::vec3 scale;
+    
+    glm::mat4 transform;
     
     bool extentDirty;
     Extent extent;

@@ -6,6 +6,7 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
+#include <algorithm>
 #include "Sphere.hpp"
 #include <glm/gtx/intersect.hpp>
 
@@ -23,7 +24,7 @@ namespace DalRT {
         
     void Sphere::SetRadius(float radius)
     {
-        this->radius = abs(radius);
+        this->radius = std::abs(radius);
     }
         
     void Sphere::CalculateExtent()

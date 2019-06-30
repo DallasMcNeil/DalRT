@@ -164,7 +164,14 @@ namespace DalRT {
             }
         }
         
-        return closestObj;
+        if (closestDist <= anyWithinDistance || anyWithinDistance <= 0.0f)
+        {
+            return closestObj;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
     
     bool Scene::RayIntersectsObject(Ray &ray, Object* ignoreObject)

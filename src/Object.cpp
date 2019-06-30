@@ -7,6 +7,7 @@
 //
 
 #include "Object.hpp"
+#include <glm/gtx/transform.hpp>
 
 namespace DalRT {
 
@@ -15,25 +16,38 @@ namespace DalRT {
         rotation = glm::vec3(0.0f,0.0f,0.0f);
         position = glm::vec3(0.0f,0.0f,0.0f);
         scale = glm::vec3(1.0f,1.0f,1.0f);
+        CalculateTransform();
         extentDirty = true;
     }
     
     void Object::SetRotation(glm::vec3 const &rotation)
     {
         this->rotation = rotation;
+        CalculateTransform();
         extentDirty = true;
     }
 
     void Object::SetPosition(glm::vec3 const &position)
     {
         this->position = position;
+        CalculateTransform();
         extentDirty = true;
     }
 
     void Object::SetScale(glm::vec3 const &scale)
     {
         this->scale = scale;
+        CalculateTransform();
         extentDirty = true;
+    }
+    
+    void Object::CalculateTransform()
+    {
+        transform = glm::translate(position);
+        transform = glm::rotate(transform, rotation.z, glm::vec3(0.0f,0.0f,1.0f));
+        transform = glm::rotate(transform, rotation.x, glm::vec3(1.0f,0.0f,0.0f));
+        transform = glm::rotate(transform, rotation.y, glm::vec3(0.0f,1.0f,0.0f));
+        transform = glm::scale(transform, scale);
     }
     
     void Object::SetMaterial(Material *material)
