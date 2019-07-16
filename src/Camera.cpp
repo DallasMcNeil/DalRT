@@ -47,6 +47,11 @@ namespace DalRT
         this->up = glm::normalize(up);
     }
     
+    void Camera::SetType(Type type)
+    {
+        this->type = type;
+    }
+    
     unsigned int Camera::GetWidth()
     {
         return width;
@@ -62,7 +67,7 @@ namespace DalRT
         std::vector<Ray> rays;
         rays.reserve(width*height);
         
-        if (false) // Fish eye
+        if (type == Type::Panoramic)
         {
             float angle = fov/float(width - 1);
             
@@ -87,7 +92,29 @@ namespace DalRT
                 }
             }
         }
-        else // Regular
+        else if (type == Type::Orthographic)
+        {
+            float aspect = float(width)/float(height);
+            float scale = fov/width;
+            
+            glm::mat4 toWorld = glm::lookAt(glm::vec3(0,0,0), -direction, up);
+            for (int h=0; h<height; h++)
+            {
+                for (int w=0; w<width; w++)
+                {
+                    float x = (w - float(width - 1)/2.0f) * scale;
+                    float y = -(h - float(height - 1)/2.0f) * scale;
+                    
+                    Ray ray;
+                    ray.color = glm::vec3(1.0f,1.0f,1.0f);
+                    glm::vec3 out = glm::vec3(glm::vec4(x,y,0,1) * toWorld) + position;
+                    ray.direction = direction;
+                    ray.origin = out;
+                    rays.push_back(ray);
+                }
+            }
+        }
+        else if (type == Type::Perspective)
         {
             float aspect = float(width)/float(height);
             float scale = std::tan(fov * 0.5);

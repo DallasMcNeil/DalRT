@@ -9,6 +9,7 @@
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "Material.hpp"
+#include <lodepng/lodepng.h>
 #include <limits>
 
 namespace DalRT {
@@ -36,6 +37,24 @@ namespace DalRT {
         }
     }
     
+    
+    bool Scene::SaveToPNGFile(std::string filename)
+    {
+        unsigned int size = camera->GetWidth() * camera->GetHeight();
+        std::vector<unsigned char> pixels;
+        pixels.resize(size*4);
+        for (int i=0; i<size;i++)
+        {
+            pixels[(i*4)] = (unsigned char)(std::min(int(render[i].r * 255.0f),255));
+            pixels[(i*4)+1] = (unsigned char)(std::min(int(render[i].g * 255.0f),255));
+            pixels[(i*4)+2] = (unsigned char)(std::min(int(render[i].b * 255.0f),255));
+            pixels[(i*4)+3] = 255;
+        }
+        
+        unsigned int error = lodepng::encode(filename, pixels, camera->GetWidth(), camera->GetHeight());
+        return error == 0;
+    }
+    
     void Scene::ProcessRay(Ray &ray, int depth, Object* currentObject)
     {
         if (depth >= maxDepth)
@@ -53,39 +72,76 @@ namespace DalRT {
             }
             else
             {
+                glm::vec3 absColNormal = col.normal;
+                if (glm::dot(col.normal, ray.direction) > 0.0f)
+                {
+                    absColNormal = -col.normal;
+                }
                 
                 Material* mat = result->GetMaterial();
                 
                 glm::vec3 diffuse = glm::vec3(0.0f,0.0f,0.0f);
                 glm::vec3 specular = glm::vec3(0.0f,0.0f,0.0f);
                 glm::vec3 reflection = glm::vec3(0.0f,0.0f,0.0f);
-                
-                // Diffuse
+                glm::vec3 through = glm::vec3(0.0f,0.0f,0.0f);
+            
+                // Diffuse and specular
                 for (int l=0; l<lights.size(); l++)
                 {
                     std::vector<Ray> lightRays = lights[l]->GenerateRaysToLight(col.location);
                     for (int r=0; r<lightRays.size(); r++)
                     {
-                        if (!RayIntersectsObject(lightRays[r], result))
+                        
+                        Object* lightObj = result;
+                        Collision lightCol;
+                        glm::vec3 lightColor = lightRays[r].color;
+                        Ray lightRay = lightRays[r];
+                        while (true)
                         {
-                            float diff = std::max(glm::dot(col.normal, lightRays[r].direction),0.0f);
+                            lightObj = RayIntersectsObject(lightRay, lightObj, lightCol);
                             
-                            glm::vec3 reflect = glm::reflect(-lightRays[r].direction, col.normal);
-                            float spec = std::pow(std::max(glm::dot(ray.direction, -reflect),0.0f), mat->specularHardness);
-                            
-                            diffuse += (lightRays[r].color) * diff;
-                            specular += (lightRays[r].color) * spec;
+                            if (lightObj == nullptr)
+                            {
+                                float diff = std::max(glm::dot(absColNormal, lightRays[r].direction),0.0f);
+                                
+                                glm::vec3 reflect = glm::reflect(-lightRays[r].direction, absColNormal);
+                                float spec = std::pow(std::max(glm::dot(ray.direction, -reflect),0.0f), mat->specularHardness);
+                                
+                                diffuse += (lightColor) * diff;
+                                specular += (lightColor) * spec;
+                                break;
+                            }
+                            else
+                            {
+                                Material* lightObjMat = lightObj->GetMaterial();
+                                lightColor = lightColor * lightObjMat->translucency * lightObjMat->color;
+                                if (lightColor.r <= 0.001f && lightColor.g <= 0.001f && lightColor.b <= 0.001f)
+                                {
+                                    break;
+                                }
+                                lightRay.distance -= glm::distance(lightRay.origin, lightCol.location);
+                                lightRay.origin = lightCol.location;
+                            }
                         }
                     }
                 }
                 
+                // Translucency
+                if (mat->translucency > 0.0f)
+                {
+                    Ray translucent = ray;
+                    translucent.direction = ray.direction;
+                    translucent.origin = col.location;
+                    translucent.color = glm::vec3(0.0f,0.0f,0.0f);
+                    ProcessRay(translucent, ++depth, result);
+                    through += translucent.color * mat->color;
+                }
                 
                 // Reflection
-                
                 if (mat->reflectiveness > 0.0f)
                 {
                     Ray reflect = ray;
-                    reflect.direction = glm::reflect(ray.direction, col.normal);
+                    reflect.direction = glm::reflect(ray.direction, absColNormal);
                     reflect.origin = col.location;
                     reflect.color = glm::vec3(0.0f,0.0f,0.0f);
                     ProcessRay(reflect, ++depth, result);
@@ -95,19 +151,21 @@ namespace DalRT {
                 ray.color = glm::vec3(0.0f,0.0f,0.0f);
                 
                 ray.color += mat->specular * specular;
-                ray.color += mat->color * diffuse * (1.0f - mat->reflectiveness);
+                ray.color += ((mat->color * diffuse) + (ambientColor * mat->color)) * (1.0f - mat->reflectiveness);
                 ray.color += mat->color * reflection * mat->reflectiveness;
+                ray.color = (ray.color * (1.0f - mat->translucency)) + (through * mat->translucency);
+                
                 return;
             }
         }
         if (depth == 0)
         {
             // Background
-            ray.color = glm::vec3(0.2f,0.2f,0.2f);
+            ray.color = backgroundColor;
         }
         else
         {
-            ray.color = glm::vec3(0.2f,0.2f,0.2f);
+            ray.color = backgroundColor;
         }
         return;
     }
@@ -174,18 +232,17 @@ namespace DalRT {
         }
     }
     
-    bool Scene::RayIntersectsObject(Ray &ray, Object* ignoreObject)
+    Object* Scene::RayIntersectsObject(Ray &ray, Object* ignoreObject, Collision &collision)
     {
         for (int g=0; g<groups.size(); g++)
         {
-            Collision col;
-            Object* result = FindObject(ray, groups[g], ray.distance, ignoreObject, col);
+            Object* result = FindObject(ray, groups[g], ray.distance, ignoreObject, collision);
             if (result != nullptr)
             {
-                return true;
+                return result;
             }
         }
-        return false;
+        return nullptr;
     }
     
     std::vector<float> Scene::GetRender() 
@@ -208,6 +265,16 @@ namespace DalRT {
     void Scene::SetMaxDepth(unsigned int depth)
     {
         maxDepth = depth;
+    }
+    
+    void Scene::SetBackgroundColor(const glm::vec3 &color)
+    {
+        backgroundColor = color;
+    }
+    
+    void Scene::SetAmbientLight(const glm::vec3 &color)
+    {
+        ambientColor = color;
     }
     
     void Scene::AddGroup(Group* group)

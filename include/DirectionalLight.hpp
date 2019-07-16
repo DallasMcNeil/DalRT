@@ -1,13 +1,13 @@
 //
-//  PointLight.hpp
+//  DirectionalLight.hpp
 //  DalRT
 //
-//  Created by Dallas McNeil on 11/6/19.
+//  Created by Dallas McNeil on 30/6/19.
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef PointLight_hpp
-#define PointLight_hpp
+#ifndef DirectionalLight_hpp
+#define DirectionalLight_hpp
 
 #include <glm/glm.hpp>
 #include "Light.hpp"
@@ -16,26 +16,26 @@
 
 namespace DalRT {
 
-class PointLight : public Light
+class DirectionalLight : public Light
 {
 public:
     
-    PointLight();
+    DirectionalLight();
     
-    void SetPosition(glm::vec3 const &position);
+    void SetDirection(glm::vec3 const &direction);
+    void SetDistance(float distance);
     
     // Color (can go past 1 for brighter)
     void SetColor(glm::vec3 const &color);
-    void SetRadius(float radius);
     
     std::vector<Ray> GenerateRaysToLight(glm::vec3 const &location) override;
     
 private:
-    glm::vec3 position;
-    float radius;
+    glm::vec3 direction;
+    float distance;
     glm::vec3 color;
 };
     
 }
 
-#endif /* PointLight_hpp */
+#endif /* DirectionalLight_hpp */

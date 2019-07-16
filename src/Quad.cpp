@@ -25,7 +25,6 @@ namespace DalRT {
         glm::vec4 pos3 = transform * glm::vec4(width/2.0f, 0.0f, height/2.0f, 1.0f);
         glm::vec4 pos4 = transform *  glm::vec4(width/2.0f, 0.0f, -height/2.0f, 1.0f);
         
-        // TODO: Need to "project" triangle to 2D, then get point, then back to 3D?
         glm::vec3 baryPos;
         bool result = glm::intersectRayTriangle(ray.origin, ray.direction, glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3), baryPos);
         if (!result)

@@ -20,11 +20,19 @@ class Camera
 public:
     Camera();
     
+    enum Type
+    {
+    Perspective,
+    Orthographic,
+    Panoramic
+    };
+    
     void SetSize(unsigned int width, unsigned int height);
     void SetFOV(float fov);
     void SetPosition(glm::vec3 const &pos);
     void SetDirection(glm::vec3 const &dir);
     void SetUp(glm::vec3 const &up);
+    void SetType(Type type);
     
     unsigned int GetWidth();
     unsigned int GetHeight();
@@ -39,6 +47,7 @@ private:
     glm::vec3 position;
     glm::vec3 direction;
     glm::vec3 up;
+    Type type;
 };
     
 }
