@@ -20,11 +20,6 @@ namespace DalRT {
         
     bool Quad::RayColides(Ray ray, Collision& collision)
     {
-        glm::vec4 pos1 = transform * glm::vec4(-width/2.0f, 0.0f, -height/2.0f, 1.0f);
-        glm::vec4 pos2 = transform * glm::vec4(-width/2.0f, 0.0f, height/2.0f, 1.0f);
-        glm::vec4 pos3 = transform * glm::vec4(width/2.0f, 0.0f, height/2.0f, 1.0f);
-        glm::vec4 pos4 = transform *  glm::vec4(width/2.0f, 0.0f, -height/2.0f, 1.0f);
-        
         glm::vec3 baryPos;
         bool result = glm::intersectRayTriangle(ray.origin, ray.direction, glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3), baryPos);
         if (!result)
@@ -54,18 +49,18 @@ namespace DalRT {
         this->width = width;
         this->height = height;
         
-        CalculateExtent();
         CalculateTransform();
+        CalculateExtent();
     }
         
     void Quad::CalculateExtent()
     {
         extent.Reset();
 
-        glm::vec4 pos1 = transform * glm::vec4(-width/2.0f, 0.0f, -height/2.0f, 1.0f);
-        glm::vec4 pos2 = transform * glm::vec4(-width/2.0f, 0.0f, height/2.0f, 1.0f);
-        glm::vec4 pos3 = transform * glm::vec4(width/2.0f, 0.0f, height/2.0f, 1.0f);
-        glm::vec4 pos4 = transform * glm::vec4(width/2.0f, 0.0f, -height/2.0f, 1.0f);
+        pos1 = transform * glm::vec4(-width/2.0f, 0.0f, -height/2.0f, 1.0f);
+        pos2 = transform * glm::vec4(-width/2.0f, 0.0f, height/2.0f, 1.0f);
+        pos3 = transform * glm::vec4(width/2.0f, 0.0f, height/2.0f, 1.0f);
+        pos4 = transform * glm::vec4(width/2.0f, 0.0f, -height/2.0f, 1.0f);
         
         extent.Extend(glm::vec3(pos1));
         extent.Extend(glm::vec3(pos2));

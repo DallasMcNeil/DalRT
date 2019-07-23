@@ -11,17 +11,30 @@
 
 namespace DalRT {
 
+/// Determines how a ray interacts with the object
 struct Material
 {
 public:
-    glm::vec3 color;
-    float reflectiveness;
-    glm::vec3 specular;
-    float specularHardness;
-    float translucency;
-    float indexOfRefraction;
-};
+    /// The colour of the object for diffuse lighting
+    glm::vec3 color = glm::vec3(0.8f,0.8f,0.8f);
     
+    /// Reflectiveness of the object
+    float reflectiveness = 0.0f;
+    
+    /// Colour of specular lighting
+    glm::vec3 specular = glm::vec3(1.0f,1.0f,1.0f);
+    
+    /// Hardness of the object for specular lighting
+    float specularHardness = 32.0f;
+    
+    /// Translucency of the object
+    float translucency = 0.0f;
+};
+     
+/// Default material for objects
+static Material DefaultMaterial;
+
 }
+
 
 #endif /* Material_hpp */

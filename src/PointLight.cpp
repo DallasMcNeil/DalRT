@@ -11,13 +11,6 @@
 
 namespace DalRT {
 
-    PointLight::PointLight()
-    {
-        position = glm::vec3(0.0f,0.0f,0.0f);
-        color = glm::vec3(1.0f,1.0f,1.0f);
-        radius = 0.0f;
-    }
-
     void PointLight::SetPosition(glm::vec3 const &position)
     {
         this->position = position;
@@ -28,27 +21,17 @@ namespace DalRT {
         this->color = color;
     }
     
-    void PointLight::SetRadius(float radius)
-    {
-        this->radius = radius;
-    }
-    
     std::vector<Ray> PointLight::GenerateRaysToLight(glm::vec3 const &location)
     {
-        std::vector<Ray> rays;
-        if (radius <= 0.0f)
-        {
-            Ray ray;
-            ray.origin = location;
-            ray.direction = glm::normalize(position - location);
-            ray.distance = glm::distance(position, location);
-            ray.color = color / std::sqrt(ray.distance);
-            rays.push_back(ray);
-        }
-        else
-        {
-            
-        }
+        std::vector<Ray> rays(1);
+        
+        Ray ray;
+        ray.origin = location;
+        ray.direction = glm::normalize(position - location);
+        ray.distance = glm::distance(position, location);
+        ray.color = color / std::sqrt(ray.distance);
+        rays[0] = ray;
+        
         return rays;
     }
     

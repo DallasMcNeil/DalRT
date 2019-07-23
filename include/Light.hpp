@@ -15,12 +15,12 @@
 
 namespace DalRT {
 
+/// Represents a light which generates light rays to illuminate object
 class Light
 {
 public:
-    
+    /// Rays of light from location to this light
     virtual std::vector<Ray> GenerateRaysToLight(glm::vec3 const &location) = 0;
-
 };
     
 }

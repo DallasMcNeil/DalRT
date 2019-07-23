@@ -11,11 +11,6 @@
 
 namespace DalRT {
 
-    Extent::Extent()
-    {
-        empty = true;
-    }
-
     void Extent::Extend(glm::vec3 const &point)
     {
         if (empty)

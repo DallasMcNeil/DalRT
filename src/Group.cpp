@@ -9,11 +9,6 @@
 #include "Group.hpp"
 
 namespace DalRT {
-
-    Group::Group()
-    {
-        extentDirty = true;
-    }
         
     void Group::AddSubGroup(Group *group)
     {

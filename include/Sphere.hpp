@@ -14,15 +14,16 @@
 
 namespace DalRT {
 
+/// Sphere object
 class Sphere : public Object
 {
 public:
     
-    Sphere();
-    
-    void SetRadius(float radius);
-    
+    /// Check if the ray intersects the sphere
     bool RayColides(Ray ray, Collision& collision) override;
+    
+    /// Set the radius of the sphere
+    void SetRadius(float radius);
     
 protected:
     void CalculateExtent() override;

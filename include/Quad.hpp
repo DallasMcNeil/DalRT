@@ -14,13 +14,17 @@
 
 namespace DalRT {
 
+/// Rectangle object
 class Quad : public Object
 {
 public:
     
     Quad();
     
+    /// Check if ray collides with quad
     bool RayColides(Ray ray, Collision& collision) override;
+    
+    /// Set the size of the quad
     void SetSize(float width, float height);
     
 protected:
@@ -29,6 +33,11 @@ protected:
 private:
     float width;
     float height;
+    
+    glm::vec3 pos1;
+    glm::vec3 pos2;
+    glm::vec3 pos3;
+    glm::vec3 pos4;
 };
     
 }

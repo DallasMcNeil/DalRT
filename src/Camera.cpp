@@ -11,16 +11,6 @@
 
 namespace DalRT
 {
-    Camera::Camera()
-    {
-        up = glm::vec3(0.0f,1.0f,0.0f);
-        direction = glm::vec3(0.0f,0.0f,1.0f);
-        position = glm::vec3(0.0f,0.0f,0.0f);
-        width = 640;
-        height = 480;
-        fov = glm::pi<float>()/2.0f;
-    }
-    
     void Camera::SetSize(unsigned int width, unsigned int height)
     {
         this->width = width;
@@ -107,9 +97,8 @@ namespace DalRT
                     
                     Ray ray;
                     ray.color = glm::vec3(1.0f,1.0f,1.0f);
-                    glm::vec3 out = glm::vec3(glm::vec4(x,y,0,1) * toWorld) + position;
                     ray.direction = direction;
-                    ray.origin = out;
+                    ray.origin = glm::vec3(glm::vec4(x,y,0,1) * toWorld) + position;
                     rays.push_back(ray);
                 }
             }
@@ -130,8 +119,7 @@ namespace DalRT
                     
                     Ray ray;
                     ray.color = glm::vec3(1.0f,1.0f,1.0f);
-                    glm::vec3 out = glm::vec4(x,y,1,1) * toWorld;
-                    ray.direction = glm::normalize(glm::vec3(out.x,out.y,out.z));
+                    ray.direction = glm::normalize(glm::vec3( glm::vec4(x,y,1,1) * toWorld));
                     ray.origin = position;
                     rays.push_back(ray);
                 }

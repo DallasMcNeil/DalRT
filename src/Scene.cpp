@@ -6,6 +6,9 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
+#include <sys/time.h>
+#include <string>
+#include <iostream>
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "Material.hpp"
@@ -13,14 +16,13 @@
 #include <limits>
 
 namespace DalRT {
-    
-    Scene::Scene()
-    {
-        maxDepth = 16;
-    }
 
     void Scene::RenderScene()
     {
+        struct timeval tps;
+        struct timeval tpe;
+        gettimeofday(&tps, NULL);
+        
         std::vector<Ray> rays = camera->ProduceRays();
         
         for (int r=0; r<rays.size(); r++)
@@ -28,6 +30,7 @@ namespace DalRT {
             ProcessRay(rays[r], 0, nullptr);
         }
         
+        render.clear();
         unsigned int size = camera->GetWidth() * camera->GetHeight();
         render.resize(size);
         
@@ -35,8 +38,10 @@ namespace DalRT {
         {
             render[i] = glm::min(rays[i].color, glm::vec3(1.0f,1.0f,1.0f));
         }
+        
+        gettimeofday(&tpe, NULL);
+        std::cout << "Rendered in " << ((tpe.tv_sec - tps.tv_sec) * 1000) + ((tpe.tv_usec - tps.tv_usec) / 1000) << "ms" << std::endl;
     }
-    
     
     bool Scene::SaveToPNGFile(std::string filename)
     {
@@ -62,6 +67,8 @@ namespace DalRT {
             return;
         }
         
+        int nextDepth = depth;
+        
         for (int g=0; g<groups.size(); g++)
         {
             Collision col;
@@ -72,6 +79,7 @@ namespace DalRT {
             }
             else
             {
+                // Object intersection
                 glm::vec3 absColNormal = col.normal;
                 if (glm::dot(col.normal, ray.direction) > 0.0f)
                 {
@@ -96,7 +104,7 @@ namespace DalRT {
                         Collision lightCol;
                         glm::vec3 lightColor = lightRays[r].color;
                         Ray lightRay = lightRays[r];
-                        while (true)
+                        while (nextDepth < maxDepth)
                         {
                             lightObj = RayIntersectsObject(lightRay, lightObj, lightCol);
                             
@@ -121,6 +129,7 @@ namespace DalRT {
                                 }
                                 lightRay.distance -= glm::distance(lightRay.origin, lightCol.location);
                                 lightRay.origin = lightCol.location;
+                                ++nextDepth;
                             }
                         }
                     }
@@ -133,7 +142,7 @@ namespace DalRT {
                     translucent.direction = ray.direction;
                     translucent.origin = col.location;
                     translucent.color = glm::vec3(0.0f,0.0f,0.0f);
-                    ProcessRay(translucent, ++depth, result);
+                    ProcessRay(translucent, ++nextDepth, result);
                     through += translucent.color * mat->color;
                 }
                 
@@ -144,29 +153,24 @@ namespace DalRT {
                     reflect.direction = glm::reflect(ray.direction, absColNormal);
                     reflect.origin = col.location;
                     reflect.color = glm::vec3(0.0f,0.0f,0.0f);
-                    ProcessRay(reflect, ++depth, result);
+                    ProcessRay(reflect, ++nextDepth, result);
                     reflection += reflect.color;
                 }
                 
                 ray.color = glm::vec3(0.0f,0.0f,0.0f);
                 
-                ray.color += mat->specular * specular;
                 ray.color += ((mat->color * diffuse) + (ambientColor * mat->color)) * (1.0f - mat->reflectiveness);
                 ray.color += mat->color * reflection * mat->reflectiveness;
                 ray.color = (ray.color * (1.0f - mat->translucency)) + (through * mat->translucency);
+                ray.color += mat->specular * specular;
                 
                 return;
             }
         }
-        if (depth == 0)
-        {
-            // Background
-            ray.color = backgroundColor;
-        }
-        else
-        {
-            ray.color = backgroundColor;
-        }
+        
+        // Fallback to background color if no intersections
+        ray.color = backgroundColor;
+        
         return;
     }
     

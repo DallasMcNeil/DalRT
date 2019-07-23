@@ -11,13 +11,6 @@
 
 namespace DalRT {
 
-    DirectionalLight::DirectionalLight()
-    {
-        direction = glm::vec3(0.0f,-1.0f,0.0f);
-        color = glm::vec3(1.0f,1.0f,1.0f);
-        distance = 1000.0f;
-    }
-
     void DirectionalLight::SetDirection(glm::vec3 const &direction)
     {
         this->direction = glm::normalize(direction);

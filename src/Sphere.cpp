@@ -11,11 +11,6 @@
 #include <glm/gtx/intersect.hpp>
 
 namespace DalRT {
-
-    Sphere::Sphere():Object()
-    {
-        radius = 1.0f;
-    }
         
     bool Sphere::RayColides(Ray ray, Collision& collision)
     {
