@@ -26,7 +26,7 @@ public:
     /// Determines if the ray intersects with the object
     virtual bool RayColides(Ray ray, Collision& collision) = 0;
     
-    /// Set the rotation of the object, Y = yaw, X = pitch, Z = yaw
+    /// Set the rotation of the object, Y = yaw, X = pitch, Z = roll
     void SetRotation(glm::vec3 const &rotation);
     
     /// Sets the position of the object

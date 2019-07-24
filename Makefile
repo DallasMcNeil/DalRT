@@ -10,7 +10,7 @@ EXAMPLE_BUILD_DIR := examples/build
 EXAMPLE_SRC_FILES := $(wildcard $(EXAMPLE_DIR)/*.cpp)
 EXAMPLE_OBJ_FILES := $(patsubst $(EXAMPLE_DIR)/%.cpp,$(EXAMPLE_BUILD_DIR)/%,$(EXAMPLE_SRC_FILES))
 ARFLAGS := -rs $(OBJ_DIR)/libDalRT.a
-CPPFLAGS := -std=c++17 -I include -I lib
+CPPFLAGS := -std=c++17 -I include -I lib -O3
 EXAMPLE_FLAGS := -Lbuild -lDalRT
 
 
@@ -25,7 +25,7 @@ $(EXAMPLE_BUILD_DIR)/%: $(EXAMPLE_DIR)/%.cpp build
 	g++ $(CPPFLAGS) $(EXAMPLE_FLAGS) -o $@ $<
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADER_FILES)
-	g++ $(CPPFLAGS) -g -c -o $@ $<
+	g++ $(CPPFLAGS) -c -o $@ $<
 
 clean:
 	rm -f $(OBJ_DIR)/*.o $(OBJ_DIR)/libDalRT.a & rm -f $(EXAMPLE_BUILD_DIR)/*

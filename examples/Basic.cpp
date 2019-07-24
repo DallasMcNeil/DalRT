@@ -1,14 +1,8 @@
 
-#include <string>
-#include <iostream>
-
 #include <DalRT.hpp>
 
-//--------------------------------------------------------------
 int main()
 {
-    glm::vec3 vec;
-    
     // Scene
     DalRT::Scene scene;
     scene.SetMaxDepth(16);
@@ -24,7 +18,7 @@ int main()
     camera.SetDirection(glm::vec3(0.0f,0.0f,1.0f));
     scene.SetCamera(&camera);
     
-    // Spheres
+    // Sphere
     DalRT::Sphere sphere;
     sphere.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     sphere.SetRadius(2.0f);
@@ -44,7 +38,7 @@ int main()
     // Lights
     DalRT::DirectionalLight light;
     light.SetDirection(glm::vec3(-0.5f,-1.0f,1.0f));
-    light.SetColor(glm::vec3(1.5f,1.5f,1.5f));
+    light.SetColor(glm::vec3(1.0f,1.0f,1.0f));
     
     // Add all objects and lights
     scene.AddLight(&light);
@@ -53,5 +47,7 @@ int main()
     // Render
     scene.RenderScene();
     
-    bool result = scene.SaveToPNGFile("Test.png");
+    scene.SaveToPNGFile("Basic.png");
+    
+    return 0;
 }

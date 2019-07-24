@@ -30,7 +30,7 @@ namespace DalRT {
         return false;
     }
         
-    std::vector<Group*> Group::GetSubGroups()
+    std::vector<Group*>& Group::GetSubGroups()
     {
         return subGroups;
     }
@@ -55,7 +55,7 @@ namespace DalRT {
         return false;
     }
         
-    std::vector<Object*> Group::GetObjects()
+    std::vector<Object*>& Group::GetObjects()
     {
         return objects;
     }

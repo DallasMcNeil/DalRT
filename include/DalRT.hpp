@@ -9,6 +9,8 @@
 #ifndef DalRT_hpp
 #define DalRT_hpp
 
+#include <string>
+#include <vector>
 #include <glm/glm.hpp>
 #include "Camera.hpp"
 #include "DirectionalLight.hpp"

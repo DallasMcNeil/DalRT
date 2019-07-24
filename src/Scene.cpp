@@ -209,19 +209,22 @@ namespace DalRT {
         std::vector<Group*> subGroups = group->GetSubGroups();
         for (int s=0; s<subGroups.size(); s++)
         {
-            Object* result = FindObject(ray, subGroups[s], anyWithinDistance, ignoreObject, objCol);
-            if (result != nullptr)
+            if (subGroups[s]->GetExtent()->RayIntersects(&ray))
             {
-                float dist = glm::distance(ray.origin, objCol.location);
-                if (dist < closestDist)
+                Object* result = FindObject(ray, subGroups[s], anyWithinDistance, ignoreObject, objCol);
+                if (result != nullptr)
                 {
-                    closestObj = result;
-                    closestDist = dist;
-                    col = objCol;
-                }
-                if (closestDist <= anyWithinDistance)
-                {
-                    return closestObj;
+                    float dist = glm::distance(ray.origin, objCol.location);
+                    if (dist < closestDist)
+                    {
+                        closestObj = result;
+                        closestDist = dist;
+                        col = objCol;
+                    }
+                    if (closestDist <= anyWithinDistance)
+                    {
+                        return closestObj;
+                    }
                 }
             }
         }
@@ -249,7 +252,7 @@ namespace DalRT {
         return nullptr;
     }
     
-    std::vector<float> Scene::GetRender() 
+    std::vector<float> Scene::GetRender()
     {
         std::vector<float> pixels(render.size() * 3);
         for (int i=0; i<render.size(); i++)

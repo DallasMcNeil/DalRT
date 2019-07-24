@@ -27,7 +27,7 @@ public:
     bool RemoveSubGroup(Group *group);
     
     /// Get the list of groups in this group
-    std::vector<Group*> GetSubGroups();
+    std::vector<Group*>& GetSubGroups();
 
     /// Add an object to this group
     void AddObject(Object *object);
@@ -36,7 +36,7 @@ public:
     bool RemoveObject(Object *object);
     
     /// Get the list of objects in this group
-    std::vector<Object*> GetObjects();
+    std::vector<Object*>& GetObjects();
 
     /// Get the extent of the entire group
     Extent* GetExtent();
