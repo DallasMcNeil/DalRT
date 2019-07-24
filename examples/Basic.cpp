@@ -46,7 +46,6 @@ int main()
     
     // Render
     scene.RenderScene();
-    
     scene.SaveToPNGFile("Basic.png");
     
     return 0;

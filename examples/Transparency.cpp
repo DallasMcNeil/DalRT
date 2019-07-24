@@ -95,7 +95,6 @@ int main()
     
     // Render
     scene.RenderScene();
-    
     scene.SaveToPNGFile("Transparency.png");
     
     return 0;

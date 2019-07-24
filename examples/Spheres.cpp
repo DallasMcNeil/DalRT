@@ -81,7 +81,7 @@ int main()
     camera.SetDirection(glm::vec3(0.0f,0.0f,1.0f));
     scene.SetCamera(&camera);
     
-    // Spheres
+    // Recursively add spheres
     DalRT::Group mainGroup;
     MakeGroups(&mainGroup, 2, glm::vec3(0.0f,0.0f,0.0f), 64.0f);
     scene.AddGroup(&mainGroup);
@@ -97,7 +97,6 @@ int main()
     
     // Render
     scene.RenderScene();
-    
     scene.SaveToPNGFile("Sphere.png");
     
     return 0;

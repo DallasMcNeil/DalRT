@@ -64,6 +64,7 @@ int main()
     wall3.SetMaterial(&material2);
     wall4.SetMaterial(&material2);
     
+    // Ceiling and floor
     DalRT::Quad floor;
     floor.SetPosition(glm::vec3(0.0f, -5.0f, 0.0f));
     floor.SetSize(10.0f, 10.0f);
@@ -93,7 +94,6 @@ int main()
     group2.AddObject(&floor);
     group2.AddObject(&ceiling);
     
-    
     // Lights
     DalRT::PointLight light;
     light.SetPosition(glm::vec3(0.0f,4.0f,0.0f));
@@ -106,7 +106,6 @@ int main()
     
     // Render
     scene.RenderScene();
-    
     scene.SaveToPNGFile("Reflection.png");
     
     return 0;
