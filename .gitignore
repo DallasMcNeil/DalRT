@@ -6,6 +6,7 @@
 design
 build
 ./*.png
+examples/*.png
 
 CMakeLists.txt.user
 CMakeCache.txt
@@ -20,4 +21,4 @@ CTestTestfile.cmake
 _deps
 x86
 x64
-DalRT.dir
+*.dir
