@@ -6,9 +6,10 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <string>
 #include <iostream>
+#include <algorithm>
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "Material.hpp"
@@ -19,9 +20,9 @@ namespace DalRT {
 
     void Scene::RenderScene()
     {
-        struct timeval tps;
-        struct timeval tpe;
-        gettimeofday(&tps, NULL);
+        //struct timeval tps;
+        //struct timeval tpe;
+        //gettimeofday(&tps, NULL);
         
         std::vector<Ray> rays = camera->ProduceRays();
         
@@ -39,8 +40,8 @@ namespace DalRT {
             render[i] = glm::min(rays[i].color, glm::vec3(1.0f,1.0f,1.0f));
         }
         
-        gettimeofday(&tpe, NULL);
-        std::cout << "Rendered in " << ((tpe.tv_sec - tps.tv_sec) * 1000) + ((tpe.tv_usec - tps.tv_usec) / 1000) << "ms" << std::endl;
+        //gettimeofday(&tpe, NULL);
+        //std::cout << "Rendered in " << ((tpe.tv_sec - tps.tv_sec) * 1000) + ((tpe.tv_usec - tps.tv_usec) / 1000) << "ms" << std::endl;
     }
     
     bool Scene::SaveToPNGFile(std::string filename)
