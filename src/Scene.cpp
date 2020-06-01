@@ -16,26 +16,113 @@
 #include <lodepng/lodepng.h>
 #include <limits>
 
+#include <CL/cl.hpp>
+
 namespace DalRT {
 
     void Scene::RenderScene()
     {
         auto start = std::chrono::high_resolution_clock::now();
 
+        /*
         std::vector<Ray> rays = camera->ProduceRays();
         
         for (int r=0; r<rays.size(); r++)
         {
             ProcessRay(rays[r], 0, nullptr);
         }
-        
+        */
+
+
+        std::vector<cl::Platform> platforms;
+
+        cl::Platform platform;
+        cl::Device device;
+
+        // Get platform details
+        cl::Platform::get(&platforms);
+        for (auto aPlatform : platforms)
+        {
+            platform = aPlatform;
+
+            std::cout << "Platform: " << aPlatform.getInfo<CL_PLATFORM_NAME>() << std::endl;
+            std::cout << "\tVersion: " << aPlatform.getInfo<CL_PLATFORM_VERSION>() << std::endl;
+
+            // Get device details
+            std::vector<cl::Device> devices;
+            aPlatform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+            for (auto aDevice : devices)
+            {
+                device = aDevice;
+
+                std::cout << "\tDevice: " << aDevice.getInfo<CL_DEVICE_NAME>() << std::endl;
+                std::cout << "\t\tVersion: " << aDevice.getInfo<CL_DEVICE_VERSION>() << std::endl;
+                std::cout << "\t\tGlobal memory: " << aDevice.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() << std::endl;
+                std::cout << "\t\tLocal memory: " << aDevice.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() << std::endl;
+                std::cout << "\t\tCompute units: " << aDevice.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
+                std::cout << "\t\tWork group size: " << aDevice.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << std::endl;
+            }
+        }
+
+        // Create context
+        cl::Context context(device);
+
+        // Load in source
+        std::string sourceCode =
+            #include "kernels/render.cl"
+        ;
+        cl::Program::Sources sources(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
+
+        // Create program
+        cl::Program program(context, sources);
+        auto error = program.build("-cl-std=CL1.2");
+        if (error != CL_SUCCESS)
+        {
+            std::cout << "ERROR couldn't build program" << std::endl;
+            std::cout << "\tStatus: " << program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(device) << std::endl;
+            std::cout << "\tOptions: " << program.getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(device) << std::endl;
+            std::cout << "\tLog: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device) << std::endl;
+            return;
+        }
+
+        // Create kernel
+        cl::Kernel kernel(program, "Render");
+
+        // Create buffers
         render.clear();
         unsigned int size = camera->GetWidth() * camera->GetHeight();
         render.resize(size);
+
+        const int tileSize = 64;
+
+        cl::Buffer outBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(glm::vec3) * size);
+        error = kernel.setArg(0, tileSize);
+        error = kernel.setArg(1, camera->GetWidth());
+        error = kernel.setArg(2, camera->GetHeight());
+        error = kernel.setArg(3, outBuffer);
+
+        int tx = (camera->GetWidth() + (tileSize - 1)) / tileSize;
+        int ty = (camera->GetHeight() + (tileSize - 1)) / tileSize;
         
+        uint64_t tileCount = 1;
+        while (tileCount < (tx*ty)) tileCount <<= 1;
+
+        std::cout << "Tiles: " << tileCount << std::endl;
+
+        cl::CommandQueue queue(context, device);
+        std::cout << "Running..." << std::endl;
+        error = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(tileCount), cl::NullRange);
+        std::cout << error << std::endl;
+
+        error = queue.enqueueReadBuffer(outBuffer, CL_TRUE, 0, sizeof(glm::vec3) * size, render.data());
+        std::cout << error << std::endl;
+
+        std::cout << sizeof(glm::vec3) * size << std::endl;
+        std::cout << render[0].z << std::endl;
+
         for (int i=0; i<size; i++)
         {
-            render[i] = glm::min(rays[i].color, glm::vec3(1.0f,1.0f,1.0f));
+            render[i] = glm::min(render[i], glm::vec3(1.0f,1.0f,1.0f));
         }
         
         auto finish = std::chrono::high_resolution_clock::now();
