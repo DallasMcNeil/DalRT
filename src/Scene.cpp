@@ -67,11 +67,11 @@ namespace DalRT {
         // Create context
         cl::Context context(device);
 
-        // Load in source
         std::string sourceCode =
             #include "kernels/render.cl"
         ;
-        cl::Program::Sources sources(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
+        cl::Program::Sources sources;
+        sources.push_back(std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 
         // Create program
         cl::Program program(context, sources);
@@ -96,10 +96,10 @@ namespace DalRT {
         const int tileSize = 64;
 
         cl::Buffer outBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(glm::vec3) * size);
-        error = kernel.setArg(0, tileSize);
-        error = kernel.setArg(1, camera->GetWidth());
-        error = kernel.setArg(2, camera->GetHeight());
-        error = kernel.setArg(3, outBuffer);
+        std::cout << kernel.setArg(0, tileSize) << std::endl;
+        std::cout << kernel.setArg(1, camera->GetWidth()) << std::endl;
+        std::cout << kernel.setArg(2, camera->GetHeight()) << std::endl;
+        std::cout << kernel.setArg(3, outBuffer) << std::endl;
 
         int tx = (camera->GetWidth() + (tileSize - 1)) / tileSize;
         int ty = (camera->GetHeight() + (tileSize - 1)) / tileSize;
