@@ -566,6 +566,24 @@ mat4_t mat4_lookAt(float3 eye, float3 center, float3 up, mat4_t dest) {
     return dest;
 }
 
+static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
+
+	/* hash the seeds using bitwise AND operations and bitshifts */
+	*seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
+	*seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
+
+	unsigned int ires = ((*seed0) << 16) + (*seed1);
+
+	/* use union struct to convert int to float */
+	union {
+		float f;
+		unsigned int ui;
+	} res;
+
+	res.ui = (ires & 0x007fffff) | 0x40000000;  /* bitwise AND, bitwise OR */
+	return (res.f - 2.0f) / 2.0f;
+}
+
 )"
 R"(
 
@@ -594,18 +612,29 @@ typedef struct Camera
     enum CameraType type;
 } Camera;
 
+typedef struct Material
+{
+    float3 color;
+    float3 emission;
+    float roughness;
+
+    float3 specular;
+    float reflectivity;
+} Material;
+
 typedef struct Collision
 {
+    float distance;
     float3 position;
     float3 normal;
+    Material* material;
 } Collision;
 
 typedef struct Sphere 
 {
 	float radius;
 	float3 position;
-	//float3 color;
-	//float3 emission;
+    Material* material;
 } Sphere;
 
 int IntersectSphere(const Sphere* sphere, const Ray* ray, Collision* collision)
@@ -627,10 +656,32 @@ int IntersectSphere(const Sphere* sphere, const Ray* ray, Collision* collision)
     else
         return 0;
 
+    collision->distance = distance;
     collision->position =  ray->origin + ray->direction * distance;
     collision->normal = normalize(collision->position - sphere->position);
 
 	return 1;
+}
+
+int IntersectScene(const Ray* ray, Collision* collision, Sphere* spheres, int sphereCount)
+{
+    Collision newCollision;
+    int hasHit = 0;
+    collision->distance = 1000000.0f;
+    collision->normal = (float3)(1.0f, 0.0f, 0.0f);
+    for (int i=0; i<sphereCount; i++)
+    {
+        int hit = IntersectSphere(&(spheres[i]), ray, &newCollision);
+        if (hit && collision->distance > newCollision.distance)
+        {
+            collision->distance = newCollision.distance;
+            collision->position = newCollision.position;
+            collision->normal = newCollision.normal;
+            collision->material = spheres[i].material;
+            hasHit = 1;
+        }
+    }
+    return hasHit;
 }
 
 void GenerateRay(Camera* camera, int x, int y, Ray* ray)
@@ -718,9 +769,27 @@ __kernel void Render(int tileSize, int width, int height, __global float* output
 	camera.fov = 1;
 	camera.type = Panoramic;
 
-    Sphere sphere;
-    sphere.position = (float3)(0.0f, 0.0f, 0.0f);
-    sphere.radius = 0.5f;
+    Material materials[3];
+    materials[0].color = (float3)(1.0f,0.5f,0.5f);
+    materials[0].emission = (float3)(0.0f,0.0f,0.0f);
+    materials[0].roughness = 0.0f;
+    materials[1].color = (float3)(0.5f,1.0f,0.5f);
+    materials[1].emission = (float3)(0.0f,0.0f,0.0f);
+    materials[1].roughness = 0.0f;
+    materials[2].color = (float3)(0.0f,0.0f,0.0f);
+    materials[2].emission = (float3)(1.0f,1.0f,1.0f);
+    materials[2].roughness = 0.0f;
+
+    Sphere spheres[3];
+    spheres[0].position = (float3)(-1.0f, 0.0f, 0.0f);
+    spheres[0].radius = 1.0f;
+    spheres[0].material = &materials[0];
+    spheres[1].position = (float3)(1.0f, 0.0f, 0.0f);
+    spheres[1].radius = 1.0f;
+    spheres[1].material = &materials[1];
+    spheres[2].position = (float3)(0.0f, 3.0f, -3.0f);
+    spheres[2].radius = 2.0f;
+    spheres[2].material = &materials[2];
 
 	int tw = (width+(tileSize-1))/tileSize;
 	int th = (height+(tileSize-1))/tileSize;
@@ -744,32 +813,66 @@ __kernel void Render(int tileSize, int width, int height, __global float* output
 			int iy = (tileSize * ty) + y;
 			int index = (((tileSize * tx) + x) + (((tileSize * ty) + y)*width)) * 3;
 
-			Ray ray;
-			GenerateRay(&camera, ix, iy, &ray);
+            float3 accumulatedColor = (float3)(0.0f,0.0f,0.0f);             
 
-            Collision collision;
 
-            int hit = IntersectSphere(&sphere, &ray, &collision);
-            if (hit)
+            unsigned int seed0 = ix;
+            unsigned int seed1 = iy;
+
+            int sampleCount = 1024;
+            for (int sample=0; sample<sampleCount; sample++)
             {
-                output[index] = (collision.normal.x + 1.0f) / 2.0f;
-                output[index + 1] = (collision.normal.y + 1.0f) / 2.0f;
-                output[index + 2] = (collision.normal.z + 1.0f) / 2.0f;
+			    Ray ray;
+			    GenerateRay(&camera, ix, iy, &ray);
+
+                Collision collision;
+
+                float3 mask = (float3)(1.0f,1.0f,1.0f);
+                for (int bounce=0; bounce<8; bounce++)
+                {
+                    int hit = IntersectScene(&ray, &collision, spheres, 3);
+                    if (hit)
+                    {
+                        accumulatedColor += mask * collision.material->emission * 2.0f;
+                        mask *= collision.material->color;
+
+                        /* compute two random numbers to pick a random point on the hemisphere above the hitpoint*/
+                        float rand1 = 2.0f * PI * GetRandom(&seed0, &seed1);
+                        float rand2 = GetRandom(&seed0, &seed1);
+                        float rand2s = sqrt(rand2);
+
+                        float3 w = collision.normal;
+                        float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
+                        float3 u = normalize(cross(axis, w));
+                        float3 v = cross(w, u);
+
+                        //ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
+                        ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
+
+                        ray.origin = collision.position + (collision.normal * EPSILON);
+                    }
+                    else
+                    {
+                        accumulatedColor += mask * (float3)(0.1f,0.1f,0.1f);
+                        break;
+                    }
+                }
             }
-            else
-            {
-                output[index] = 0.5f;
-                output[index + 1] = 0.5f;
-                output[index + 2] = 0.5f;
-            }
+
+            accumulatedColor /= (float)sampleCount;
 
             //output[index] = (ray.direction.x + 1.0f) / 2.0f;
             //output[index + 1] = (ray.direction.y + 1.0f) / 2.0f;
             //output[index + 2] = (ray.direction.z + 1.0f) / 2.0f;
 
-			//output[index] = ix/(float)width;
-			//output[index + 1] = iy/(float)height;
-			//output[index + 2] = (float)id/(tw*th);
+			output[index] = accumulatedColor.x;
+			output[index + 1] = accumulatedColor.y;
+			output[index + 2] = accumulatedColor.z;
+
+
+			//output[index] = 1.0f;
+			//output[index + 1] = accumulatedColor.y;
+			//output[index + 2] = accumulatedColor.z;
 		}
 	}
 }
