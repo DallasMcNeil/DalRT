@@ -616,10 +616,9 @@ typedef struct Material
 {
     float3 color;
     float3 emission;
-    float roughness;
 
-    float3 specular;
     float reflectivity;
+    float roughness;
 } Material;
 
 typedef struct Collision
@@ -758,123 +757,145 @@ void GenerateRay(Camera* camera, int x, int y, Ray* ray)
     */
 }
 
-__kernel void Render(int tileSize, int width, int height, __global float* output)
+__kernel void Render(int tileSize, int tileX, int tileY, __global float* output)
 {
+    int width = 1920;
+    int height = 1080;
+
 	Camera camera;
-	camera.position = (float3)(0.0f, 0.0f, -3.0f);
+	camera.position = (float3)(0.0f, 0.0f, -5.0f);
     camera.direction = (float3)(0.0f, 0.0f, 1.0f);
     camera.up = (float3)(0.0f, 1.0f, 0.0f);
 	camera.width = width;
 	camera.height = height;
-	camera.fov = 1;
+	camera.fov = 2.5f;
 	camera.type = Panoramic;
 
-    Material materials[3];
+    Material materials[4];
     materials[0].color = (float3)(1.0f,0.5f,0.5f);
     materials[0].emission = (float3)(0.0f,0.0f,0.0f);
     materials[0].roughness = 0.0f;
+    materials[0].reflectivity = 0.0f;
     materials[1].color = (float3)(0.5f,1.0f,0.5f);
     materials[1].emission = (float3)(0.0f,0.0f,0.0f);
     materials[1].roughness = 0.0f;
+    materials[1].reflectivity = 0.0f;
     materials[2].color = (float3)(0.0f,0.0f,0.0f);
-    materials[2].emission = (float3)(1.0f,1.0f,1.0f);
+    materials[2].emission = (float3)(1.0f,1.0f,1.0f) * 100;
     materials[2].roughness = 0.0f;
+    materials[2].reflectivity = 0.0f;
+    materials[3].color = (float3)(1.0f,1.0f,1.0f) * 0.9f;
+    materials[3].emission = (float3)(0.0f,0.0f,0.0f);
+    materials[3].roughness = 0.0f;
+    materials[3].reflectivity = 1.0f;
 
-    Sphere spheres[3];
+    Sphere spheres[4];
     spheres[0].position = (float3)(-1.0f, 0.0f, 0.0f);
     spheres[0].radius = 1.0f;
     spheres[0].material = &materials[0];
     spheres[1].position = (float3)(1.0f, 0.0f, 0.0f);
     spheres[1].radius = 1.0f;
     spheres[1].material = &materials[1];
-    spheres[2].position = (float3)(0.0f, 3.0f, -3.0f);
-    spheres[2].radius = 2.0f;
+    spheres[2].position = (float3)(0.0f, 5.0f, -3.0f);
+    spheres[2].radius = 0.3f;
     spheres[2].material = &materials[2];
+    spheres[3].position = (float3)(0.0f, -1002.0f, 0.0f);
+    spheres[3].radius = 1000.0f;
+    spheres[3].material = &materials[3];
 
-	int tw = (width+(tileSize-1))/tileSize;
-	int th = (height+(tileSize-1))/tileSize;
 	int id = get_global_id(0);
-	int tx = id%tw;
-	int ty = id/th;
+    int ix = id%tileSize;
+    int iy = id/tileSize;
 
-    if (ty > th)
+    int x = tileX + ix;
+    int y = tileY + iy;
+    int index = ((y * width) + x) * 4;
+
+    if (x >= width || y >= height)
 	{
 		return;
 	}
 
-	int xRange = min(width - (tx*tileSize), tileSize);
-	int yRange = min(height- (ty*tileSize), tileSize);
+    float4 accumulatedColor = (float4)(0.0f,0.0f,0.0f,0.0f);             
 
-    for (int x=0; x<xRange; x++)
-	{
-		for (int y=0; y<yRange; y++)
-		{
-			int ix = (tileSize * tx) + x;
-			int iy = (tileSize * ty) + y;
-			int index = (((tileSize * tx) + x) + (((tileSize * ty) + y)*width)) * 3;
+    unsigned int seed0 = x;
+    unsigned int seed1 = y;
 
-            float3 accumulatedColor = (float3)(0.0f,0.0f,0.0f);             
+    int sampleCount = 4096;
+    for (int sample=0; sample<sampleCount; sample++)
+    {
+		Ray ray;
+		GenerateRay(&camera, x, y, &ray);
 
+        Collision collision;
 
-            unsigned int seed0 = ix;
-            unsigned int seed1 = iy;
-
-            int sampleCount = 1024;
-            for (int sample=0; sample<sampleCount; sample++)
+        float4 mask = (float4)(1.0f,1.0f,1.0f,1.0f);
+        for (int bounce=0; bounce<8; bounce++)
+        {
+            int hit = IntersectScene(&ray, &collision, spheres, 4);
+            if (hit)
             {
-			    Ray ray;
-			    GenerateRay(&camera, ix, iy, &ray);
+                accumulatedColor += mask * (float4)(collision.material->emission,1.0f);
 
-                Collision collision;
-
-                float3 mask = (float3)(1.0f,1.0f,1.0f);
-                for (int bounce=0; bounce<8; bounce++)
+                if (GetRandom(&seed0, &seed1) > collision.material->reflectivity)
                 {
-                    int hit = IntersectScene(&ray, &collision, spheres, 3);
-                    if (hit)
-                    {
-                        accumulatedColor += mask * collision.material->emission * 2.0f;
-                        mask *= collision.material->color;
+                    // Diffuse
 
-                        /* compute two random numbers to pick a random point on the hemisphere above the hitpoint*/
-                        float rand1 = 2.0f * PI * GetRandom(&seed0, &seed1);
-                        float rand2 = GetRandom(&seed0, &seed1);
-                        float rand2s = sqrt(rand2);
+                    /* compute two random numbers to pick a random point on the hemisphere above the hitpoint*/
+                    float rand1 = 2.0f * PI * GetRandom(&seed0, &seed1);
+                    float rand2 = GetRandom(&seed0, &seed1);
+                    float rand2s = sqrt(rand2);
 
-                        float3 w = collision.normal;
-                        float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
-                        float3 u = normalize(cross(axis, w));
-                        float3 v = cross(w, u);
+                    float3 w = collision.normal;
+                    float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
+                    float3 u = normalize(cross(axis, w));
+                    float3 v = cross(w, u);
 
-                        //ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
-                        ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
-
-                        ray.origin = collision.position + (collision.normal * EPSILON);
-                    }
-                    else
-                    {
-                        accumulatedColor += mask * (float3)(0.1f,0.1f,0.1f);
-                        break;
-                    }
+                    ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
+                    ray.origin = collision.position + (collision.normal * EPSILON);
                 }
+                else
+                {
+                    // Reflect
+                    /* compute two random numbers to pick a random point on the hemisphere above the hitpoint*/
+                    float rand1 = 2.0f * PI * GetRandom(&seed0, &seed1);
+                    float rand2 = GetRandom(&seed0, &seed1);
+                    float rand2s = sqrt(rand2) * collision.material->roughness;
+
+                    float3 w = collision.normal;
+                    float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
+                    float3 u = normalize(cross(axis, w));
+                    float3 v = cross(w, u);
+
+                    ray.direction = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
+                    ray.origin = collision.position + (collision.normal * EPSILON);
+                }
+
+                mask *= (float4)(collision.material->color, 1.0f);
+               
+
             }
+            else
+            {
+                if (bounce == 0)
+                {
+                    accumulatedColor = (float4)(0.1f,0.1f,0.1f,0.0f);
+                }
+                else
+                {
+                    accumulatedColor += mask * (float4)(0.1f,0.1f,0.1f,1.0f);
+                }
+                break;
+            }
+        }
+    }
 
-            accumulatedColor /= (float)sampleCount;
+    accumulatedColor /= (float)sampleCount;
 
-            //output[index] = (ray.direction.x + 1.0f) / 2.0f;
-            //output[index + 1] = (ray.direction.y + 1.0f) / 2.0f;
-            //output[index + 2] = (ray.direction.z + 1.0f) / 2.0f;
-
-			output[index] = accumulatedColor.x;
-			output[index + 1] = accumulatedColor.y;
-			output[index + 2] = accumulatedColor.z;
-
-
-			//output[index] = 1.0f;
-			//output[index + 1] = accumulatedColor.y;
-			//output[index + 2] = accumulatedColor.z;
-		}
-	}
+	output[index] = accumulatedColor.x;
+	output[index + 1] = accumulatedColor.y;
+	output[index + 2] = accumulatedColor.z;
+	output[index + 3] = accumulatedColor.w;
 }
 
 )"

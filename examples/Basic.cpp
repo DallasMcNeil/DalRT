@@ -6,12 +6,11 @@ int main()
     // Scene
     DalRT::Scene scene;
     scene.SetMaxDepth(16);
-    scene.SetBackgroundColor(glm::vec3(0.8f,0.8f,0.8f));
-    scene.SetAmbientLight(glm::vec3(0.1f,0.1f,0.1f));
+    scene.SetBackgroundColor(glm::vec4(0.8f,0.8f,0.8f, 0.0f));
     
     // Camera
     DalRT::Camera camera;
-    camera.SetSize(640, 640);
+    camera.SetSize(1920, 1080);
     camera.SetFOV(3.1415/2.0f);
     camera.SetType(DalRT::Camera::Type::Perspective);
     camera.SetPosition(glm::vec3(0.0f,0.0f,0.0f));

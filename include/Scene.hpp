@@ -38,10 +38,7 @@ public:
     void SetMaxDepth(unsigned int depth);
     
     /// Set the background colour of the scene
-    void SetBackgroundColor(glm::vec3 const& color);
-    
-    /// Set the ambient light colour in the scene
-    void SetAmbientLight(glm::vec3 const& color);
+    void SetBackgroundColor(glm::vec4 const& color);
     
     /// Add a group to the scene
     void AddGroup(Group* group);
@@ -60,11 +57,10 @@ private:
     Object* FindObject(Ray &ray, Group* group, float anyWithinDistance, Object* ignoreObject, Collision& col);
     Object* RayIntersectsObject(Ray &ray, Object* ignoreObject, Collision& lightCol);
     
-    glm::vec3 backgroundColor = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 ambientColor = glm::vec3(0.0f,0.0f,0.0f);
+    glm::vec3 backgroundColor = glm::vec4(1.0f,1.0f,1.0f, 0.0f);
     std::vector<Group*> groups;
     std::vector<Light*> lights;
-    std::vector<glm::vec3> render;
+    std::vector<glm::vec4> render;
     Camera* camera;
     unsigned int maxDepth = 16;
 };

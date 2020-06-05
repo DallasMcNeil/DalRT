@@ -66,14 +66,15 @@ namespace DalRT {
 
         // Create context
         cl::Context context(device);
+        cl::CommandQueue queue(context, device);
 
+        // Create program
         std::string sourceCode =
             #include "kernels/render.cl"
         ;
         cl::Program::Sources sources;
         sources.push_back(std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 
-        // Create program
         cl::Program program(context, sources);
         auto error = program.build("-cl-std=CL1.2");
         if (error != CL_SUCCESS)
@@ -93,36 +94,36 @@ namespace DalRT {
         unsigned int size = camera->GetWidth() * camera->GetHeight();
         render.resize(size);
 
+        cl::Buffer outBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(glm::vec4) * size);
+
+        // Render scene
         const int tileSize = 64;
-
-        cl::Buffer outBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(glm::vec3) * size);
-        std::cout << kernel.setArg(0, tileSize) << std::endl;
-        std::cout << kernel.setArg(1, camera->GetWidth()) << std::endl;
-        std::cout << kernel.setArg(2, camera->GetHeight()) << std::endl;
-        std::cout << kernel.setArg(3, outBuffer) << std::endl;
-
-        int tx = (camera->GetWidth() + (tileSize - 1)) / tileSize;
-        int ty = (camera->GetHeight() + (tileSize - 1)) / tileSize;
-        
-        uint64_t tileCount = 1;
-        while (tileCount < (tx*ty)) tileCount <<= 1;
-
-        std::cout << "Tiles: " << tileCount << std::endl;
-
-        cl::CommandQueue queue(context, device);
         std::cout << "Running..." << std::endl;
-        error = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(tileCount), cl::NullRange);
+        for (int tx = 0; tx < camera->GetWidth(); tx += tileSize)
+        {
+            for (int ty = 0; ty < camera->GetHeight(); ty += tileSize)
+            {
+                kernel.setArg(0, tileSize);
+                kernel.setArg(1, tx);
+                kernel.setArg(2, ty);
+                kernel.setArg(3, outBuffer);
+                error = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(tileSize*tileSize), cl::NullRange);
+                if (error != CL_SUCCESS)
+                {
+                    std::cout << tx << ":" << ty << " " << error << std::endl;
+                }
+            }
+        }
+        
+        // Retrieve result
+        error = queue.enqueueReadBuffer(outBuffer, CL_TRUE, 0, sizeof(glm::vec4) * size, render.data());
         std::cout << error << std::endl;
 
-        error = queue.enqueueReadBuffer(outBuffer, CL_TRUE, 0, sizeof(glm::vec3) * size, render.data());
-        std::cout << error << std::endl;
-
-        std::cout << sizeof(glm::vec3) * size << std::endl;
-        std::cout << render[0].z << std::endl;
+        std::cout << sizeof(glm::vec4) * size << std::endl;
 
         for (int i=0; i<size; i++)
         {
-            render[i] = glm::min(render[i], glm::vec3(1.0f,1.0f,1.0f));
+            render[i] = glm::min(render[i], glm::vec4(1.0f,1.0f,1.0f, 1.0f));
         }
         
         auto finish = std::chrono::high_resolution_clock::now();
@@ -139,7 +140,7 @@ namespace DalRT {
             pixels[(i*4)] = (unsigned char)(std::min(int(render[i].r * 255.0f),255));
             pixels[(i*4)+1] = (unsigned char)(std::min(int(render[i].g * 255.0f),255));
             pixels[(i*4)+2] = (unsigned char)(std::min(int(render[i].b * 255.0f),255));
-            pixels[(i*4)+3] = 255;
+            pixels[(i*4)+3] = (unsigned char)(std::min(int(render[i].a * 255.0f), 255));
         }
         
         unsigned int error = lodepng::encode(filename, pixels, camera->GetWidth(), camera->GetHeight());
@@ -245,7 +246,7 @@ namespace DalRT {
                 
                 ray.color = glm::vec3(0.0f,0.0f,0.0f);
                 
-                ray.color += ((mat->color * diffuse) + (ambientColor * mat->color)) * (1.0f - mat->reflectiveness);
+                //ray.color += ((mat->color * diffuse) + (ambientColor * mat->color)) * (1.0f - mat->reflectiveness);
                 ray.color += mat->color * reflection * mat->reflectiveness;
                 ray.color = (ray.color * (1.0f - mat->translucency)) + (through * mat->translucency);
                 ray.color += mat->specular * specular;
@@ -340,12 +341,13 @@ namespace DalRT {
     
     std::vector<float> Scene::GetRender()
     {
-        std::vector<float> pixels(render.size() * 3);
+        std::vector<float> pixels(render.size() * 4);
         for (int i=0; i<render.size(); i++)
         {
-            pixels[(i*3) + 0] = render[i].r;
-            pixels[(i*3) + 1] = render[i].g;
-            pixels[(i*3) + 2] = render[i].b;
+            pixels[(i*4) + 0] = render[i].r;
+            pixels[(i*4) + 1] = render[i].g;
+            pixels[(i*4) + 2] = render[i].b;
+            pixels[(i*4) + 3] = render[i].a;
         }
         return pixels;
     }
@@ -360,14 +362,9 @@ namespace DalRT {
         maxDepth = depth;
     }
     
-    void Scene::SetBackgroundColor(const glm::vec3 &color)
+    void Scene::SetBackgroundColor(const glm::vec4 &color)
     {
         backgroundColor = color;
-    }
-    
-    void Scene::SetAmbientLight(const glm::vec3 &color)
-    {
-        ambientColor = color;
     }
     
     void Scene::AddGroup(Group* group)
