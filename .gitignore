@@ -22,3 +22,4 @@ _deps
 x86
 x64
 *.dir
+*.build
