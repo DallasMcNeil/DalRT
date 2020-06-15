@@ -171,14 +171,16 @@ float3 mat4_multiplyVec3(mat4_t mat, float3 vec) {
     return dest;
 }
 
-mat4_t mat4_multiplyVec4(mat4_t mat, float4 vec, mat4_t dest) {
+float4 mat4_multiplyVec4(mat4_t mat, float4 vec) {
 
     float x = vec.x, y = vec.y, z = vec.z, w = vec.w;
 
-    dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12] * w;
-    dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13] * w;
-    dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14] * w;
-    dest[3] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15] * w;
+    float4 dest;
+
+    dest.x = mat[0] * x + mat[4] * y + mat[8] * z + mat[12] * w;
+    dest.y = mat[1] * x + mat[5] * y + mat[9] * z + mat[13] * w;
+    dest.z = mat[2] * x + mat[6] * y + mat[10] * z + mat[14] * w;
+    dest.w = mat[3] * x + mat[7] * y + mat[11] * z + mat[15] * w;
 
     return dest;
 }
@@ -706,55 +708,38 @@ void GenerateRay(Camera* camera, int x, int y, Ray* ray)
         ray->direction = mat4_multiplyVec3(rotMat, rotVert);
         ray->color = (float3)(1.0f,1.0f,1.0f);
         ray->origin = camera->position;
-
-        //ray->direction = camera->direction;
     }
-
-    /*
     else if (camera->type == Orthographic)
     {
-        float aspect = float(width)/float(height);
-        float scale = fov/width;
+        float aspect = (float)(camera->width)/(float)(camera->height);
+        float scale = camera->fov/(float)camera->width;
             
-        glm::mat4 toWorld = glm::lookAt(glm::vec3(0,0,0), -direction, up);
-        for (int h=0; h<height; h++)
-        {
-            for (int w=0; w<width; w++)
-            {
-                float x = (w - float(width - 1)/2.0f) * scale;
-                float y = -(h - float(height - 1)/2.0f) * scale;
-                    
-                Ray ray;
-                ray.color = glm::vec3(1.0f,1.0f,1.0f);
-                ray.direction = direction;
-                ray.origin = glm::vec3(glm::vec4(x,y,0,1) * toWorld) + position;
-                rays.push_back(ray);
-            }
-        }
+        float mat[16];
+        mat4_lookAt((float3)(0.0f,0.0f,0.0f), -camera->direction, camera->up, mat);
+
+        float cx = (x - (float)(camera->width - 1)/2.0f) * scale;
+        float cy = -(y - (float)(camera->height - 1)/2.0f) * scale;
+
+        ray->color = (float3)(1.0f,1.0f,1.0f);
+        ray->direction = normalize(camera->direction);
+        ray->origin = mat4_multiplyVec3(mat, (float3)(cx,cy,0.0f)) + camera->position;
     }
     else if (camera->type == Perspective)
     {
-        float aspect = float(width)/float(height);
-        float scale = std::tan(fov * 0.5);
-            
-        glm::mat4 toWorld = glm::lookAt(glm::vec3(0,0,0), -direction, up);
-            
-        for (int h=0; h<height; h++)
-        {
-            for (int w=0; w<width; w++)
-            {
-                float x = (2.0f * (w + 0.5f) / float(width) - 1.0f) * aspect * scale;
-                float y = (1.0f - 2.0f * (h + 0.5f) / float(height)) * scale;
-                    
-                Ray ray;
-                ray.color = glm::vec3(1.0f,1.0f,1.0f);
-                ray.direction = glm::normalize(glm::vec3( glm::vec4(x,y,1,1) * toWorld));
-                ray.origin = position;
-                rays.push_back(ray);
-            }
-        }
+        float aspect = (float)(camera->width)/(float)(camera->height);
+        float scale = tan(camera->fov * 0.5);
+        
+        float cx = ((2.0f * ((float)(x) / (float)(camera->width))) - 1.0f) * aspect * scale;
+        float cy = (1.0f - (2.0f * ((float)(y) / (float)(camera->height)))) * scale;
+
+        float mat[16];
+        mat4_lookAt((float3)(0.0f,0.0f,0.0f), -camera->direction, camera->up, mat);
+        float3 dir = mat4_multiplyVec3(mat, (float3)(cx,cy,1.0f));
+                   
+        ray->color = (float3)(1.0f,1.0f,1.0f);
+        ray->direction = normalize(dir);
+        ray->origin = camera->position;  
     }
-    */
 }
 
 __kernel void Render(int tileSize, int tileX, int tileY, __global float* output)
@@ -768,8 +753,8 @@ __kernel void Render(int tileSize, int tileX, int tileY, __global float* output)
     camera.up = (float3)(0.0f, 1.0f, 0.0f);
 	camera.width = width;
 	camera.height = height;
-	camera.fov = 2.5f;
-	camera.type = Panoramic;
+	camera.fov = 20.0f;
+	camera.type = Orthographic;// Perspective;
 
     Material materials[4];
     materials[0].color = (float3)(1.0f,0.5f,0.5f);
@@ -826,6 +811,10 @@ __kernel void Render(int tileSize, int tileX, int tileY, __global float* output)
     {
 		Ray ray;
 		GenerateRay(&camera, x, y, &ray);
+
+            
+        //accumulatedColor = (float4)((ray.direction + 1.0f) / 2.0f, 1.0f) * sampleCount;
+        //break;
 
         Collision collision;
 

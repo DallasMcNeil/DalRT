@@ -123,7 +123,7 @@ namespace DalRT {
 
         for (int i=0; i<size; i++)
         {
-            render[i] = glm::min(render[i], glm::vec4(1.0f,1.0f,1.0f, 1.0f));
+            render[i] = glm::max(glm::min(render[i], glm::vec4(1.0f,1.0f,1.0f, 1.0f)), glm::vec4(0.0f,0.0f,0.0f, 0.0f));
         }
         
         auto finish = std::chrono::high_resolution_clock::now();
