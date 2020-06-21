@@ -6,11 +6,9 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Extent_hpp
-#define Extent_hpp
+#pragma once
 
 #include <glm/glm.hpp>
-#include "Ray.hpp"
 
 namespace DalRT {
 
@@ -31,9 +29,6 @@ public:
     /// Determines if the point is within the extent
     bool ContainsPoint(glm::vec3 const &point);
     
-    /// Check if the ray intersects the region
-    bool RayIntersects(Ray* ray);
-    
     /// Get the minimum of the extent
     glm::vec3 GetMin();
     
@@ -50,5 +45,3 @@ private:
 };
     
 }
-
-#endif /* Extent_hpp */

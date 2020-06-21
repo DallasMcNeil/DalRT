@@ -12,10 +12,10 @@
 
 namespace DalRT {
         
-    bool Sphere::RayColides(Ray ray, Collision& collision)
-    {
-        return glm::intersectRaySphere(ray.origin, ray.direction, position, radius, collision.location, collision.normal);
-    }
+    // bool Sphere::RayColides(Ray ray, Collision& collision)
+    // {
+    //     return glm::intersectRaySphere(ray.origin, ray.direction, position, radius, collision.location, collision.normal);
+    // }
         
     void Sphere::SetRadius(float radius)
     {

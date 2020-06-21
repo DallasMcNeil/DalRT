@@ -6,8 +6,7 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Triangle_hpp
-#define Triangle_hpp
+#pragma once
 
 #include <glm/glm.hpp>
 #include "Object.hpp"
@@ -20,9 +19,6 @@ class Triangle : public Object
 public:
     
     Triangle();
-    
-    /// Check if ray collides with triangle
-    bool RayColides(Ray ray, Collision& collision) override;
     
     /// Set the points of the triangle
     void SetPoints(glm::vec3 point1, glm::vec3 point2, glm::vec3 point3);
@@ -41,5 +37,3 @@ private:
 };
     
 }
-
-#endif /* Triangle_hpp */

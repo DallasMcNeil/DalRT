@@ -6,8 +6,7 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Group_hpp
-#define Group_hpp
+#pragma once
 
 #include "Object.hpp"
 #include "Extent.hpp"
@@ -51,5 +50,3 @@ private:
 };
     
 }
-
-#endif /* Group_hpp */

@@ -17,18 +17,18 @@ namespace DalRT {
         
     }
         
-    bool Triangle::RayColides(Ray ray, Collision& collision)
-    {
-        glm::vec3 baryPos;
-        bool result = glm::intersectRayTriangle(ray.origin, ray.direction, glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3), baryPos);
-        if (result)
-        {
-            collision.location = baryPos.x * pos2 + baryPos.y * pos3 + (1.0f - baryPos.x - baryPos.y) * pos1;
-            collision.normal = glm::triangleNormal(glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3));
-        }
+    // bool Triangle::RayColides(Ray ray, Collision& collision)
+    // {
+    //     glm::vec3 baryPos;
+    //     bool result = glm::intersectRayTriangle(ray.origin, ray.direction, glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3), baryPos);
+    //     if (result)
+    //     {
+    //         collision.location = baryPos.x * pos2 + baryPos.y * pos3 + (1.0f - baryPos.x - baryPos.y) * pos1;
+    //         collision.normal = glm::triangleNormal(glm::vec3(pos1), glm::vec3(pos2), glm::vec3(pos3));
+    //     }
         
-        return result;
-    }
+    //     return result;
+    // }
     
     void Triangle::SetPoints(glm::vec3 point1, glm::vec3 point2, glm::vec3 point3)
     {

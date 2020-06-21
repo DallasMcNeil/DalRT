@@ -6,8 +6,7 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Quad_hpp
-#define Quad_hpp
+#pragma once
 
 #include <glm/glm.hpp>
 #include "Object.hpp"
@@ -20,9 +19,6 @@ class Quad : public Object
 public:
     
     Quad();
-    
-    /// Check if ray collides with quad
-    bool RayColides(Ray ray, Collision& collision) override;
     
     /// Set the size of the quad
     void SetSize(float width, float height);
@@ -41,5 +37,3 @@ private:
 };
     
 }
-
-#endif /* Quad_hpp */

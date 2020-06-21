@@ -6,12 +6,10 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Object_hpp
-#define Object_hpp
+#pragma once
 
 #include <glm/glm.hpp>
 #include "Extent.hpp"
-#include "Ray.hpp"
 #include "Material.hpp"
 
 namespace DalRT {
@@ -22,10 +20,7 @@ class Object
 public:
     
     Object();
-    
-    /// Determines if the ray intersects with the object
-    virtual bool RayColides(Ray ray, Collision& collision) = 0;
-    
+
     /// Set the rotation of the object, Y = yaw, X = pitch, Z = roll
     void SetRotation(glm::vec3 const &rotation);
     
@@ -61,5 +56,3 @@ protected:
 };
     
 }
-
-#endif /* Object_hpp */

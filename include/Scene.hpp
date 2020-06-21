@@ -6,14 +6,12 @@
 //  Copyright © 2019 Dallas McNeil. All rights reserved.
 //
 
-#ifndef Scene_hpp
-#define Scene_hpp
+#pragma once
 
 #include <glm/glm.hpp>
 #include <vector>
 #include "Camera.hpp"
 #include "Group.hpp"
-#include "Light.hpp"
 
 namespace DalRT {
 
@@ -46,25 +44,13 @@ public:
     /// Remove a group from the scene
     bool RemoveGroup(Group* group);
     
-    /// Add a light to the scene
-    void AddLight(Light* group);
-    
-    /// Remove a light from the scene
-    bool RemoveLight(Light* group);
-    
 private:
-    void ProcessRay(Ray &ray, int depth, Object* currentObject);
-    Object* FindObject(Ray &ray, Group* group, float anyWithinDistance, Object* ignoreObject, Collision& col);
-    Object* RayIntersectsObject(Ray &ray, Object* ignoreObject, Collision& lightCol);
-    
+
     glm::vec3 backgroundColor = glm::vec4(1.0f,1.0f,1.0f, 0.0f);
     std::vector<Group*> groups;
-    std::vector<Light*> lights;
     std::vector<glm::vec4> render;
     Camera* camera;
     unsigned int maxDepth = 16;
 };
     
 }
-
-#endif /* Scene_hpp */

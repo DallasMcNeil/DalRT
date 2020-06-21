@@ -12,7 +12,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <vector>
-#include "Ray.hpp"
 
 namespace DalRT {
 
@@ -54,9 +53,6 @@ public:
     
     /// Get the height of the output image
     unsigned int GetHeight();
-    
-    /// Produce the initial rays for the image
-    std::vector<Ray> ProduceRays();
     
 private:
     unsigned int width = 640;
